@@ -1,7 +1,11 @@
 import { Hono, Next } from "hono";
 
 import { UsersController } from "@/controllers/users";
-import { User as bodyUser, validatePartialUser, validateUser } from "@/schemas/users";
+import {
+  User as bodyUser,
+  validatePartialUser,
+  validateUser,
+} from "@/schemas/users";
 
 import type { HonoContext } from "@/types/hono";
 
@@ -15,11 +19,13 @@ async function validateCreate(c: HonoContext, next: Next) {
     console.log(body);
     return next();
   }
-  c.status(400);
-  return c.json({
-    error: "Invalid request",
-    details: validationResult.error,
-  });
+  return c.json(
+    {
+      error: "Invalid request",
+      details: validationResult.error,
+    },
+    400,
+  );
 }
 
 async function validateUpdate(c: HonoContext, next: Next) {
@@ -30,11 +36,13 @@ async function validateUpdate(c: HonoContext, next: Next) {
     console.log(body);
     return next();
   }
-  c.status(400);
-  return c.json({
-    error: "Invalid request",
-    details: validationResult.error,
-  });
+  return c.json(
+    {
+      error: "Invalid request",
+      details: validationResult.error,
+    },
+    400,
+  );
 }
 
 users.get("/", UsersController.getAll);
