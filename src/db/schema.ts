@@ -5,12 +5,12 @@ import { pgTable, uuid, text, date, timestamp } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  nickname: text("nickname").notNull(),
-  nombre: text("nombre").notNull(),
-  apellido: text("apellido").notNull(),
-  fechaNacimiento: date("fecha_nacimiento").notNull(),
-  correo: text("correo").notNull(),
-  genero: text("genero").notNull(),
-  pais: text("pais").notNull(),
+  name: text("name").notNull(),
+  lastName: text("last_name").notNull(),
+  birthDate: date("birth_date").notNull(),
+  gender: text("gender").notNull(),
+  email: text("email").notNull(),
+  nickName: text("nickname").notNull(),
+  country: text("country").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
