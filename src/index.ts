@@ -1,9 +1,17 @@
-import { Hono } from 'hono'
+import { Hono } from "hono";
+import { logger } from "hono/logger";
 
-const app = new Hono()
+import { users } from "./routes/users";
+import { health } from "./routes/health";
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
+const app = new Hono().basePath("/api/");
 
-export default app
+app.use(logger());
+
+app.route("/health", health);
+app.route("/users", users);
+
+export default {
+  port: process.env.PORT ?? 3000,
+  fetch: app.fetch,
+};
