@@ -1,3 +1,5 @@
+import { ContentfulStatusCode } from "hono/utils/http-status";
+
 interface PostgresError extends Error {
   code?: string;
   detail?: string;
@@ -26,14 +28,14 @@ export const mapDbError = (err: unknown) => {
   if (isDatabaseError(err)) {
     switch (err.cause.code) {
       case PG_ERRORS.UNIQUE_VIOLATION:
-        return { status: 409, message: "The reagistry already exist." };
+        return { status: 409 as ContentfulStatusCode, message: "The reagistry already exist." };
       case PG_ERRORS.FOREIGN_KEY_VIOLATION:
-        return { status: 400, message: "Not a valid reference." };
+        return { status: 400 as ContentfulStatusCode, message: "Not a valid reference." };
       case PG_ERRORS.NOT_NULL_VIOLATION:
-        return { status: 400, message: "Null not allowed." };
+        return { status: 400 as ContentfulStatusCode, message: "Null not allowed." };
       default:
-        return { status: 500, message: "Internal Server Error" };
+        return { status: 500 as ContentfulStatusCode, message: "Internal Server Error" };
     }
   }
-  return { status: 500, message: "Internal Server Error" };
+  return { status: 500 as ContentfulStatusCode, message: "Internal Server Error" };
 };
