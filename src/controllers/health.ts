@@ -1,7 +1,7 @@
-import type { HonoContext } from "@/types/hono";
+import type { Context } from "hono";
 
 export class HealthController {
-  static async main(c: HonoContext) {
+  static async main(c: Context) {
     return c.json({
       status: "ok",
       uptime: process.uptime(),
