@@ -1,19 +1,28 @@
-import type { Context } from 'hono'
+import type { Context } from "hono";
 
 import { UsersService } from "@/services/users";
 import { validators } from "@/middlewares/zodValidators";
 
 export class UsersController {
   static async getAll(c: Context) {
-    const users = await UsersService.getAll();
+    const page = Number(c.req.query("page") ?? 1);
+    const limit = Number(c.req.query("limit") ?? 10);
+    const users = await UsersService.getAll(page, limit);
     if (users) {
-      return c.json(users, 200);
+      return c.json(
+        {
+          page,
+          limit,
+          data: users,
+        },
+        200,
+      );
     }
     return c.json({ error: "Couldn't find users" }, 404);
   }
 
   static async getId(c: Context) {
-    const user = await UsersService.getById(c.get(validators.VALIDATED_PARAM)) ;
+    const user = await UsersService.getById(c.get(validators.VALIDATED_PARAM));
     if (user) {
       return c.json(user, 200);
     }
@@ -51,7 +60,9 @@ export class UsersController {
   }
 
   static async delete(c: Context) {
-    const deleted = await UsersService.delete(c.get(validators.VALIDATED_PARAM));
+    const deleted = await UsersService.delete(
+      c.get(validators.VALIDATED_PARAM),
+    );
     if (deleted) {
       return c.json({ "Succesfully deleted user: ": deleted }, 200);
     }

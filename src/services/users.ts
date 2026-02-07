@@ -6,8 +6,9 @@ import { users } from "@/db/schema";
 import { CreateUser, User } from "@/schemas/users";
 
 export class UsersService {
-  static async getAll() {
-    return db.select().from(users);
+  static async getAll(page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
+    return await db.select().from(users).limit(limit).offset(offset);
   }
 
   static async getById(id: string) {
@@ -35,7 +36,6 @@ export class UsersService {
       .set({ ...data })
       .where(eq(users.id, id))
       .returning();
-
     return user ?? null;
   }
 
@@ -45,7 +45,6 @@ export class UsersService {
       .set({ ...data })
       .where(eq(users.id, id))
       .returning();
-
     return user ?? null;
   }
 
@@ -54,7 +53,6 @@ export class UsersService {
       .delete(users)
       .where(eq(users.id, id))
       .returning({ id: users.id });
-
     return user ?? null;
   }
 }
