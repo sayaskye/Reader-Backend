@@ -40,14 +40,14 @@ export type UserIdParam = z.infer<typeof UserIdParamSchema>;
 export type CreateUser = z.infer<typeof CreateUserSchema>;
 export type EditUser = z.infer<typeof EditUserSchema>;
 
-export function validateUUID(input: UserIdParam) {
+export const validateUUID = (input: UserIdParam) => {
   return UserIdParamSchema.safeParse(input);
 }
 
-export function validateUser(input: CreateUser) {
+export const validateUser = (input: CreateUser) => {
   return CreateUserSchema.safeParse(input);
 }
 
-export function validatePartialUser(input: EditUser) {
+export const validatePartialUser = (input: EditUser) => {
   return CreateUserSchema.partial().safeParse(input);
 }

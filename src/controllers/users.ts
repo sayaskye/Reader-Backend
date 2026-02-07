@@ -1,59 +1,60 @@
-import { UsersService } from "@/services/users";
+import type { Context } from 'hono'
 
-import type { HonoContext } from "@/types/hono";
+import { UsersService } from "@/services/users";
+import { validators } from "@/middlewares/zodValidators";
 
 export class UsersController {
-  static async getAll(c: HonoContext) {
+  static async getAll(c: Context) {
     const users = await UsersService.getAll();
     if (users) {
       return c.json(users, 200);
     }
-    return c.json({ message: "Couldn't find users" }, 404);
+    return c.json({ error: "Couldn't find users" }, 404);
   }
 
-  static async getId(c: HonoContext) {
-    const user = await UsersService.getById(c.req.param("id"));
+  static async getId(c: Context) {
+    const user = await UsersService.getById(c.get(validators.VALIDATED_PARAM)) ;
     if (user) {
       return c.json(user, 200);
     }
-    return c.json({ message: "User not found" }, 404);
+    return c.json({ error: "User not found" }, 404);
   }
 
-  static async create(c: HonoContext) {
-    const user = await UsersService.create(await c.req.json());
+  static async create(c: Context) {
+    const user = await UsersService.create(c.get(validators.VALIDATED_BODY));
     if (user) {
       return c.json(user, 201);
     }
-    return c.json({ message: "Couldn't create user" }, 404);
+    return c.json({ error: "Couldn't create user" }, 404);
   }
 
-  static async update(c: HonoContext) {
+  static async update(c: Context) {
     const user = await UsersService.update(
-      c.req.param("id"),
-      await c.req.json(),
+      c.get(validators.VALIDATED_PARAM),
+      c.get(validators.VALIDATED_BODY),
     );
     if (user) {
       return c.json(user, 200);
     }
-    return c.json({ message: "Couldn't update user" }, 404);
+    return c.json({ error: "Couldn't update user" }, 404);
   }
 
-  static async partialUpdate(c: HonoContext) {
+  static async partialUpdate(c: Context) {
     const user = await UsersService.partialUpdate(
-      c.req.param("id"),
-      await c.req.json(),
+      c.get(validators.VALIDATED_PARAM),
+      c.get(validators.VALIDATED_BODY),
     );
     if (user) {
       return c.json(user, 200);
     }
-    return c.json({ message: "Couldn't patch user" }, 404);
+    return c.json({ error: "Couldn't patch user" }, 404);
   }
 
-  static async delete(c: HonoContext) {
-    const deleted = await UsersService.delete(c.req.param("id"));
+  static async delete(c: Context) {
+    const deleted = await UsersService.delete(c.get(validators.VALIDATED_PARAM));
     if (deleted) {
       return c.json({ "Succesfully deleted user: ": deleted }, 200);
     }
-    return c.json({ message: "User not found" }, 404);
+    return c.json({ error: "User not found" }, 404);
   }
 }
