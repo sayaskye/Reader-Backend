@@ -2,52 +2,43 @@ import { Hono, Next } from "hono";
 
 import { UsersController } from "@/controllers/users";
 import {
-  User as bodyUser,
   validatePartialUser,
   validateUser,
+  validateUUID,
 } from "@/schemas/users";
 
 import type { HonoContext } from "@/types/hono";
 
 export const users = new Hono();
 
-async function validateCreate(c: HonoContext, next: Next) {
-  const body: bodyUser = await c.req.json();
-  const validationResult = validateUser(body);
+//TODO: Create generic middleware to validate create and update
+async function validateId(c: HonoContext, next: Next){
+  const validationResult = validateUUID({id: c.req.param("id")});
   if (validationResult.success) {
-    //TODO: Delete console log
-    console.log(body);
     return next();
   }
-  return c.json(
-    {
-      error: "Invalid request",
-      details: validationResult.error,
-    },
-    400,
-  );
+  return c.json({ message: "Invalid id" }, 400);
+}
+
+async function validateCreate(c: HonoContext, next: Next) {
+  const validationResult = validateUser(await c.req.json());
+  if (validationResult.success) {
+    return next();
+  }
+  return c.json({ error: "Invalid request" }, 400);
 }
 
 async function validateUpdate(c: HonoContext, next: Next) {
-  const body: bodyUser = await c.req.json();
-  const validationResult = validatePartialUser(body);
+  const validationResult = validatePartialUser(await c.req.json());
   if (validationResult.success) {
-    //TODO: Verify the succes condition, it's not denying with wrong fields, only with wrong conditions
-    console.log(body);
     return next();
   }
-  return c.json(
-    {
-      error: "Invalid request",
-      details: validationResult.error,
-    },
-    400,
-  );
+  return c.json({ error: "Invalid request" }, 400);
 }
 
 users.get("/", UsersController.getAll);
-users.get("/:id", UsersController.getId);
+users.get("/:id", validateId, UsersController.getId);
 users.post("/", validateCreate, UsersController.create);
-users.patch("/:id", validateUpdate, UsersController.partialUpdate);
-users.put("/:id", validateUpdate, UsersController.update);
-users.delete("/:id", UsersController.delete);
+users.put("/:id", validateUpdate, validateId, UsersController.update);
+users.patch("/:id", validateUpdate, validateId, UsersController.partialUpdate);
+users.delete("/:id", validateId, UsersController.delete);
