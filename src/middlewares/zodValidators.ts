@@ -5,6 +5,13 @@ export enum validators {
   VALIDATED_BODY = "validatedBody",
 }
 
+/**
+ * Generic middleware to validate data with zod
+ * @param {function} fn - Generic function from zod with safe parse.
+ * @param {string} target - Indicates what needs to validate, a parameter or body(Json).
+ * @param {string} key - Indicates what parameters is going to validate.
+ * @returns {void || object} The result of validation, success or error.
+ */
 export const validate =
   (fn: any, target: "param" | "json" = "json", key = "id") =>
   async (c: Context, next: Next) => {
