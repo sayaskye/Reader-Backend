@@ -7,6 +7,7 @@ import { health } from "@/routes/health";
 
 import { errors } from "@/middlewares/errors";
 import { authMiddleware } from "@/middlewares/auth";
+import { validators } from "@/middlewares/zodValidators";
 
 const app = new Hono().basePath("/api/");
 
@@ -20,7 +21,7 @@ app.route("/auth", auth);
 
 //TODO: Delete this
 //@ts-ignore
-app.get("/", authMiddleware, (c) => c.json({message: 'Protected route!', user: c.get("userId")}, 200))
+app.get("/", authMiddleware, (c) => c.json({message: 'Protected route!', user: c.get(validators.VALIDATED_ID)}, 200))
 
 export default {
   port: process.env.PORT ?? 3000,

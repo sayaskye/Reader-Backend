@@ -1,19 +1,19 @@
 import { Context, Next } from "hono";
-import { jwtVerify } from "jose";
+import { getCookie } from "hono/cookie";
 
-import { secret } from "@/utils/jwt";
+import { verify } from "@/utils/jwt";
+import { validators } from "@/middlewares/zodValidators";
 
 export async function authMiddleware(c: Context, next: Next) {
-  const auth = c.req.header("authorization");
+  const token = getCookie(c, "access_token");
 
-  if (!auth?.startsWith("Bearer ")) {
+  if (!token) {
     return c.text("Unauthorized", 401);
   }
 
   try {
-    const token = auth.slice(7);
-    const { payload } = await jwtVerify(token, secret);
-    c.set("userId", payload.sub);
+    const { payload } = await verify(token);
+    c.set(validators.VALIDATED_ID, payload.sub);
     await next();
   } catch {
     return c.text("Unauthorized", 401);

@@ -8,3 +8,4 @@ import { validate } from "@/middlewares/zodValidators";
 export const auth = new Hono();
 
 auth.post("/login", validate(validateLogin), AuthController.login);
+auth.post("/refresh", AuthController.refresh);

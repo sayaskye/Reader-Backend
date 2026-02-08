@@ -1,15 +1,16 @@
 import { eq } from "drizzle-orm";
 
-import { createJWT } from "@/utils/jwt";
 import { verifyPassword } from "@/utils/argon";
 
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { Login } from "@/schemas/auth";
+import { createJWT } from "@/utils/jwt";
+import { setCookie } from "hono/cookie";
 
 export enum messages {
   invalid = "Invalid credentials",
-  unknown = "Something went wrong"
+  unknown = "Something went wrong",
 }
 
 export class AuthService {
@@ -24,10 +25,9 @@ export class AuthService {
     const verified = await verifyPassword(user.passwordHash, body.password);
     if (!verified) return messages.invalid;
 
-    const token = await createJWT(user.id);
-    
-    if (token) return token
+    const accessToken = await createJWT(user.id);
+    if (!accessToken) return messages.unknown
 
-    return messages.unknown;
+    return accessToken;
   }
 }
