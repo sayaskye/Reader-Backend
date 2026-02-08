@@ -28,7 +28,6 @@ export const validate =
 
     if (!r.success) {
       const flatErrors = r.error.flatten();
-      console.log(flatErrors);
       return c.json(
         {
           error: "Validation failed",
