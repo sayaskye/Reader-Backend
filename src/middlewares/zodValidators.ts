@@ -3,6 +3,7 @@ import type { Context, Next } from "hono";
 export enum validators {
   VALIDATED_PARAM = "validatedParam",
   VALIDATED_BODY = "validatedBody",
+  VALIDATED_ID = "userId",
 }
 
 /**
