@@ -9,6 +9,7 @@ const UserSchema = z.object({
   birthDate: z.string(),
   gender: z.string(),
   country: z.string(),
+  passwordHash: z.string(),
 });
 
 export const UserIdParamSchema = z.object({
@@ -23,6 +24,7 @@ export const CreateUserSchema = z.object({
   birthDate: z.string(),
   gender: z.string(),
   country: z.string(),
+  passwordHash: z.string(),
 });
 
 export const EditUserSchema = z.object({
@@ -33,6 +35,7 @@ export const EditUserSchema = z.object({
   birthDate: z.string().optional(),
   gender: z.string().optional(),
   country: z.string().optional(),
+  passwordHash: z.string(),
 });
 
 export type User = z.infer<typeof UserSchema>;
@@ -42,12 +45,12 @@ export type EditUser = z.infer<typeof EditUserSchema>;
 
 export const validateUUID = (input: UserIdParam) => {
   return UserIdParamSchema.safeParse(input);
-}
+};
 
 export const validateUser = (input: CreateUser) => {
   return CreateUserSchema.safeParse(input);
-}
+};
 
 export const validatePartialUser = (input: EditUser) => {
   return CreateUserSchema.partial().safeParse(input);
-}
+};
