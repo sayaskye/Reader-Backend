@@ -24,7 +24,7 @@ export const CreateUserSchema = z.object({
   birthDate: z.string(),
   gender: z.string(),
   country: z.string(),
-  passwordHash: z.string(),
+  password: z.string().min(8),
 });
 
 export const EditUserSchema = z.object({
@@ -35,7 +35,7 @@ export const EditUserSchema = z.object({
   birthDate: z.string().optional(),
   gender: z.string().optional(),
   country: z.string().optional(),
-  passwordHash: z.string(),
+  password: z.string().min(8),
 });
 
 export type User = z.infer<typeof UserSchema>;

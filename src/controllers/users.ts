@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 
+import { hashPassword } from "@/utils/argon";
 import { UsersService } from "@/services/users";
 import { validators } from "@/middlewares/zodValidators";
 
@@ -30,7 +31,9 @@ export class UsersController {
   }
 
   static async create(c: Context) {
-    const user = await UsersService.create(c.get(validators.VALIDATED_BODY));
+    const body = c.get(validators.VALIDATED_BODY);
+    const passwordHash = await hashPassword(body.password)
+    const user = await UsersService.create(body, passwordHash);
     if (user) {
       return c.json(user, 201);
     }

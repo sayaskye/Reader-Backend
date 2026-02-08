@@ -20,11 +20,12 @@ export class UsersService {
     return result[0] ?? null;
   }
 
-  static async create(data: CreateUser) {
+  static async create(data: CreateUser, passwordHash: string) {
     const result = await db
       .insert(users)
       .values({
         ...data,
+        passwordHash
       })
       .returning();
     return result[0];

@@ -4,6 +4,7 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
+    "argon2": "^0.44.0",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.11.7",
     "jose": "^6.1.3",
