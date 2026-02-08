@@ -6,7 +6,6 @@ import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { Login } from "@/schemas/auth";
 import { createJWT } from "@/utils/jwt";
-import { setCookie } from "hono/cookie";
 
 export enum messages {
   invalid = "Invalid credentials",
