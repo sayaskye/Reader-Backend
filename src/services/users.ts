@@ -6,18 +6,25 @@ import { users } from "@/db/schema";
 import { CreateUser, User } from "@/schemas/users";
 
 export class UsersService {
+  private static publicColumns = {
+    passwordHash: false,
+  } as const;
+
   static async getAll(page = 1, limit = 10) {
     const offset = (page - 1) * limit;
-    return await db.select().from(users).limit(limit).offset(offset);
+    return await await db.query.users.findMany({
+      limit: limit,
+      offset: offset,
+      columns: this.publicColumns,
+    });
   }
 
   static async getById(id: string) {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
-    return result[0] ?? null;
+    const result = await db.query.users.findFirst({
+      where: eq(users.id, id),
+      columns: this.publicColumns,
+    });
+    return result ?? null;
   }
 
   static async create(data: CreateUser, passwordHash: string) {
@@ -25,9 +32,13 @@ export class UsersService {
       .insert(users)
       .values({
         ...data,
-        passwordHash
+        passwordHash,
       })
-      .returning();
+      .returning({
+        id: users.id,
+        email: users.email,
+        nickname: users.nickname,
+      });
     return result[0];
   }
 
@@ -36,7 +47,11 @@ export class UsersService {
       .update(users)
       .set({ ...data })
       .where(eq(users.id, id))
-      .returning();
+      .returning({
+        id: users.id,
+        email: users.email,
+        nickname: users.nickname,
+      });
     return user ?? null;
   }
 
@@ -45,7 +60,11 @@ export class UsersService {
       .update(users)
       .set({ ...data })
       .where(eq(users.id, id))
-      .returning();
+      .returning({
+        id: users.id,
+        email: users.email,
+        nickname: users.nickname,
+      });
     return user ?? null;
   }
 
