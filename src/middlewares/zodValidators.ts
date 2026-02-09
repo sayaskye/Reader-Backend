@@ -6,38 +6,46 @@ export enum validators {
   VALIDATED_ID = "userId",
 }
 
-/**
- * Generic middleware to validate data with zod
- * @param {function} fn - Generic function from zod with safe parse.
- * @param {string} target - Indicates what needs to validate, a parameter or body(Json).
- * @param {string} key - Indicates what parameters is going to validate.
- * @returns {void || object} The result of validation, success or error.
- */
-export const validate =
-  (fn: any, target: "param" | "json" = "json", key = "id") =>
-  async (c: Context, next: Next) => {
-    const value =
-      target === "param" ? { [key]: c.req.param(key) } : await c.req.json();
-
-    const r = fn(value);
+export const validateBody = (fn: any) => async (c: Context, next: Next) => {
+  try {
+    const body = await c.req.json();
+    const r = fn(body);
 
     if (r.success) {
-      if (target === "param") c.set(validators.VALIDATED_PARAM, r.data?.[key]);
-      else c.set(validators.VALIDATED_BODY, r.data);
-      return next();
+      c.set(validators.VALIDATED_BODY, r.data);
+      return await next();
     }
 
-    if (!r.success) {
-      const flatErrors = r.error.flatten();
-      return c.json(
-        {
-          error: "Validation failed",
-          details: flatErrors.fieldErrors,
-          formErrors: flatErrors.formErrors,
-        },
-        400,
-      );
+    const flatErrors = r.error.flatten();
+    return c.json(
+      {
+        error: "Validation failed",
+        details: flatErrors.fieldErrors,
+      },
+      400,
+    );
+  } catch (e) {
+    return c.json({ error: "Invalid JSON format" }, 400);
+  }
+};
+
+export const validateParam =
+  (fn: any, key: string) =>
+  async (c: Context, next: Next) => {
+    const paramValue = { [key]: c.req.param(key) };
+    const r = fn(paramValue);
+
+    if (r.success) {
+      const data = r.data as Record<string, any>;
+      c.set(validators.VALIDATED_PARAM, data[key]);
+      return await next();
     }
-    //If for some reason... just in case
-    return c.json({ error: "Data validation failed" }, 400);
+
+    return c.json(
+      {
+        error: `Invalid parameter: ${key}`,
+        details: r.error ? r.error.flatten().fieldErrors : null,
+      },
+      400,
+    );
   };
