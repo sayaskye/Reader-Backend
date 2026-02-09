@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770361410941,
-      "tag": "0000_remarkable_hawkeye",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770432031466,
-      "tag": "0001_parched_maggott",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770432554196,
-      "tag": "0002_thick_dark_beast",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1770517063153,
-      "tag": "0003_amazing_tomas",
+      "when": 1770615114604,
+      "tag": "0000_careful_senator_kelly",
       "breakpoints": true
     }
   ]

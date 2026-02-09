@@ -2,13 +2,8 @@ import * as z from "zod";
 
 const UserSchema = z.object({
   id: z.uuid(),
-  name: z.string(),
-  lastName: z.string(),
   email: z.email(),
   nickname: z.string(),
-  birthDate: z.string(),
-  gender: z.string(),
-  country: z.string(),
   passwordHash: z.string(),
 });
 
@@ -17,24 +12,14 @@ export const UserIdParamSchema = z.object({
 });
 
 export const CreateUserSchema = z.object({
-  name: z.string(),
-  lastName: z.string(),
   email: z.email(),
   nickname: z.string(),
-  birthDate: z.string(),
-  gender: z.string(),
-  country: z.string(),
   password: z.string().min(8),
 });
 
 export const EditUserSchema = z.object({
-  name: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.email().optional(),
-  nickname: z.string().optional(),
-  birthDate: z.string().optional(),
-  gender: z.string().optional(),
-  country: z.string().optional(),
+  email: z.email(),
+  nickname: z.string(),
   password: z.string().min(8),
 });
 
