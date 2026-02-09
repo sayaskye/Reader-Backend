@@ -14,11 +14,9 @@ export enum messages {
 
 export class AuthService {
   static async login(body: Login) {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, body.email))
-      .limit(1);
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, body.email),
+    });
     if (!user) return messages.invalid;
 
     const verified = await verifyPassword(user.passwordHash, body.password);
