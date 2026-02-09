@@ -14,16 +14,18 @@ export class AuthController {
         const accessToken = await createJWT(result);
         setCookie(c, "access_token", accessToken, {
           httpOnly: true,
-          sameSite: "lax",
-          secure: false, // true only in HTTPS
+          maxAge: 60 * 60 * 24,
+          sameSite: "strict",
+          secure: true,
           path: "/",
         });
         const refreshToken = await createRefreshToken(result);
         setCookie(c, "refresh_token", refreshToken, {
           httpOnly: true,
-          sameSite: "lax",
-          secure: false,
-          path: "/api/auth/refresh",
+          maxAge: 60 * 60 * 24 * 90,
+          sameSite: "strict",
+          secure: true,
+          path: "/",
         });
         return c.json({ success: true }, 200);
       }
@@ -47,8 +49,9 @@ export class AuthController {
 
     setCookie(c, "access_token", result, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      maxAge: 60 * 60 * 24,
+      sameSite: "strict",
+      secure: true,
       path: "/",
     });
 
