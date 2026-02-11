@@ -108,4 +108,22 @@ export class AuthService {
       return messages.invalid;
     }
   }
+
+  static async logout(refreshToken: string) {
+    try {
+      const { payload } = await verify(refreshToken);
+
+      await db
+        .update(refreshTokens)
+        .set({
+          revoked: true,
+          deletedAt: new Date(),
+        })
+        .where(eq(refreshTokens.id, payload.jti as string));
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

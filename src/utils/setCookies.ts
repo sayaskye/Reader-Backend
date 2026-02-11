@@ -19,3 +19,16 @@ export const setAuthCookie = (
     path: "/",
   });
 };
+
+export const clearAuthCookie = (
+  c: Context,
+  type: tokenTypes,
+) => {
+  setCookie(c, type, "", {
+    httpOnly: true,
+    maxAge: 0,
+    sameSite: "strict",
+    secure: true,
+    path: "/",
+  });
+};

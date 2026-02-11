@@ -9,3 +9,4 @@ export const auth = new Hono();
 
 auth.post("/login", validateBody(validateLogin), AuthController.login);
 auth.post("/refresh", AuthController.refresh);
+auth.post("/logout", AuthController.logout)

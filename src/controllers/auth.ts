@@ -3,7 +3,7 @@ import { getCookie } from "hono/cookie";
 
 import { AuthService, messages } from "@/services/auth";
 import { validators } from "@/middlewares/zodValidators";
-import { setAuthCookie, tokenTypes } from "@/utils/setCookies";
+import { clearAuthCookie, setAuthCookie, tokenTypes } from "@/utils/setCookies";
 
 export class AuthController {
   static async login(c: Context) {
@@ -33,5 +33,18 @@ export class AuthController {
       return c.json({ success: true }, 200);
     }
     return c.text("Unauthorized", 401);
+  }
+
+  static async logout(c: Context) {
+    const refreshToken = getCookie(c, "refresh_token");
+
+    if (refreshToken) {
+      await AuthService.logout(refreshToken);
+    }
+
+    clearAuthCookie(c,tokenTypes.access)
+    clearAuthCookie(c,tokenTypes.refresh)
+
+    return c.json({ success: true });
   }
 }
