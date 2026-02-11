@@ -1,11 +1,25 @@
 import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
 
+import { UsersService } from "@/services/users";
 import { AuthService, messages } from "@/services/auth";
+
 import { validators } from "@/middlewares/zod-validators";
+
+import { hashPassword } from "@/utils/argon";
 import { clearAuthCookie, setAuthCookie, tokenTypes } from "@/utils/auth-cookies";
 
 export class AuthController {
+  static async register(c: Context) {
+    const body = c.get(validators.VALIDATED_BODY);
+    const passwordHash = await hashPassword(body.password)
+    const user = await UsersService.create(body, passwordHash);
+    if (user) {
+      return c.json(user, 201);
+    }
+    return c.json({ error: "Couldn't create user" }, 404);
+  }
+
   static async login(c: Context) {
     const body = c.get(validators.VALIDATED_BODY);
     if (body) {
