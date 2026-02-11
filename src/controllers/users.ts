@@ -23,7 +23,7 @@ export class UsersController {
   }
 
   static async getId(c: Context) {
-    const user = await UsersService.getById(c.get(validators.VALIDATED_PARAM));
+    const user = await UsersService.getById(c.get(validators.VALIDATED_ID));
     if (user) {
       return c.json(user, 200);
     }
@@ -53,7 +53,7 @@ export class UsersController {
 
   static async partialUpdate(c: Context) {
     const user = await UsersService.partialUpdate(
-      c.get(validators.VALIDATED_PARAM),
+      c.get(validators.VALIDATED_ID),
       c.get(validators.VALIDATED_BODY),
     );
     if (user) {
