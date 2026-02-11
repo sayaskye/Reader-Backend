@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 
 import { UsersController } from "@/controllers/users";
-import { validatePartialUser, validateUUID } from "@/schemas/users";
+import { validateUUID } from "@/schemas/id";
+import { validatePartialUser } from "@/schemas/users";
 
 import { validateBody, validateParam } from "@/middlewares/zod-validators";
 import { authMiddleware } from "@/middlewares/auth";
@@ -10,6 +11,7 @@ export const users = new Hono();
 
 //TODO: user can delete their account if they want to
 users.get("/me", authMiddleware, UsersController.getId);
+//TODO: only user who asked and confirmed their identity can update their info
 users.patch("/me", authMiddleware, validateBody(validatePartialUser), UsersController.partialUpdate);
 
 //TODO: Adjust endpoints by roles, only admin can delete and watch all users

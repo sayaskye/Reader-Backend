@@ -7,10 +7,6 @@ const UserSchema = z.object({
   passwordHash: z.string(),
 });
 
-export const UserIdParamSchema = z.object({
-  id: z.uuid(),
-});
-
 export const CreateUserSchema = z.object({
   email: z.email(),
   nickname: z.string(),
@@ -24,13 +20,8 @@ export const EditUserSchema = z.object({
 });
 
 export type User = z.infer<typeof UserSchema>;
-export type UserIdParam = z.infer<typeof UserIdParamSchema>;
 export type CreateUser = z.infer<typeof CreateUserSchema>;
 export type EditUser = z.infer<typeof EditUserSchema>;
-
-export const validateUUID = (input: UserIdParam) => {
-  return UserIdParamSchema.safeParse(input);
-};
 
 export const validateUser = (input: CreateUser) => {
   return CreateUserSchema.safeParse(input);
