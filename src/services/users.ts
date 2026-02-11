@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { users, roles, userRoles } from "@/db/schema";
 
 import { CreateUser, User } from "@/schemas/users";
+import { userHashExcludedConfig, userWithRolesConfig } from "@/utils/query-configs";
 
 const { passwordHash, ...publicColumns } = getTableColumns(users);
 export class UsersService {
@@ -19,17 +20,8 @@ export class UsersService {
   static async getById(id: string) {
     const result = await db.query.users.findFirst({
       where: eq(users.id, id),
-      columns: { passwordHash: false, deletedAt: false, createdAt: false },
-      with: {
-        roles: {
-          columns: {},
-          with: {
-            role: {
-              columns: { name: true },
-            },
-          },
-        },
-      },
+      ...userHashExcludedConfig,
+      ...userWithRolesConfig
     });
     if (result && result.roles) {
       const cleanedUser = {

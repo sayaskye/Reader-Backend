@@ -1,5 +1,5 @@
 export const userHashExcludedConfig = {
-  columns: { passwordHash: false }
+  columns: { passwordHash: false, deletedAt: false, createdAt: false }
 } as const;
 
 export const userWithRolesConfig = {
