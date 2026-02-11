@@ -19,9 +19,25 @@ export class UsersService {
   static async getById(id: string) {
     const result = await db.query.users.findFirst({
       where: eq(users.id, id),
-      columns: { passwordHash: false, deletedAt: false, createdAt: false },
+      columns: { passwordHash: false, deletedAt: false, createdAt: false },with: {
+        roles: {
+          columns:{},
+          with: {
+            role: {
+              columns: { name: true }
+            }
+          }
+        }
+      }
     });
-    return result ?? null;
+    if (result && result.roles) {
+      const cleanedUser = {
+        ...result,
+        roles: result.roles.map(r => r.role.name)
+      };
+      return cleanedUser
+    }
+    return null;
   }
 
   static async create(data: CreateUser, passwordHash: string) {
