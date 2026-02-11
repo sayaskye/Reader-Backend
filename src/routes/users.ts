@@ -9,11 +9,11 @@ import { authMiddleware, requireAdmin } from "@/middlewares/auth";
 
 export const users = new Hono();
 
-users.get("/me", authMiddleware, UsersController.getId);
+users.get("/me", authMiddleware, UsersController.getMe);
 users.patch("/me", authMiddleware, validateBody(validatePartialUser), UsersController.partialUpdateMe);
 users.delete("/me", authMiddleware, UsersController.deleteMe);
 
 users.get("/",authMiddleware, requireAdmin, UsersController.getAll);
-users.get("/:id",authMiddleware, requireAdmin, validateParam(validateUUID, "id"), UsersController.getId);
+users.get("/:id",authMiddleware, requireAdmin, validateParam(validateUUID, "id"), UsersController.getById);
 users.patch("/:id",authMiddleware, requireAdmin, validateBody(validatePartialUser), validateParam(validateUUID, "id"), UsersController.partialUpdateId);
 users.delete("/:id",authMiddleware, requireAdmin, validateParam(validateUUID, "id"), UsersController.deleteById);

@@ -22,8 +22,9 @@ export class UsersController {
     return c.json({ error: "Couldn't find users" }, 404);
   }
 
-  private static async internalGetId(c: Context, id: string) {
-    const user = await UsersService.getById(c.get(id));
+  static async internalGetId(c: Context, id: string) {
+    console.log("aa")
+    const user = await UsersService.getById(id);
     if (user) {
       return c.json(user, 200);
     }
@@ -32,12 +33,12 @@ export class UsersController {
 
   static async getMe(c: Context) {
     const id = c.get(validators.VALIDATED_ID);
-    return this.internalGetId(c, id);
+    return UsersController.internalGetId(c, id);
   }
 
-  static async getId(c: Context) {
+  static async getById(c: Context) {
     const id = c.get(validators.VALIDATED_PARAM);
-    return this.internalGetId(c, id);
+    return UsersController.internalGetId(c, id);
   }
 
   static async create(c: Context) {
@@ -49,9 +50,9 @@ export class UsersController {
     }
     return c.json({ error: "Couldn't create user" }, 404);
   }
-  private static async internalPut(c: Context, id: string) {
+  static async internalPut(c: Context, id: string) {
     const user = await UsersService.update(
-      c.get(id),
+      id,
       c.get(validators.VALIDATED_BODY),
     );
     if (user) {
@@ -60,18 +61,18 @@ export class UsersController {
     return c.json({ error: "Couldn't update user" }, 404);
   }
   static async updateMe(c: Context) {
-    const id = c.get(validators.VALIDATED_PARAM);
-    return this.internalPut(c, id);
+    const id = c.get(validators.VALIDATED_ID);
+    return UsersController.internalPut(c, id);
   }
 
   static async updateId(c: Context) {
     const id = c.get(validators.VALIDATED_PARAM);
-    return this.internalPut(c, id);
+    return UsersController.internalPut(c, id);
   }
 
-  private static async internalPatch(c: Context, id: string) {
+  static async internalPatch(c: Context, id: string) {
     const user = await UsersService.partialUpdate(
-      c.get(id),
+      id,
       c.get(validators.VALIDATED_BODY),
     );
     if (user) {
@@ -81,16 +82,16 @@ export class UsersController {
   }
 
   static async partialUpdateMe(c: Context) {
-    const id = c.get(validators.VALIDATED_PARAM);
-    return this.internalPatch(c, id);
+    const id = c.get(validators.VALIDATED_ID);
+    return UsersController.internalPatch(c, id);
   }
 
   static async partialUpdateId(c: Context) {
     const id = c.get(validators.VALIDATED_PARAM);
-    return this.internalPatch(c, id);
+    return UsersController.internalPatch(c, id);
   }
 
-  private static async internalDelete(c: Context, id: string) {
+  static async internalDelete(c: Context, id: string) {
     const deleted = await UsersService.delete(id);
     if (deleted) {
       return c.json({ "Succesfully deleted user": deleted }, 200);
@@ -100,11 +101,11 @@ export class UsersController {
 
   static async deleteMe(c: Context) {
     const id = c.get(validators.VALIDATED_ID);
-    return this.internalDelete(c, id);
+    return UsersController.internalDelete(c, id);
   }
 
   static async deleteById(c: Context) {
     const id = c.get(validators.VALIDATED_PARAM);
-    return this.internalDelete(c, id);
+    return UsersController.internalDelete(c, id);
   }
 }
