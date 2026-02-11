@@ -2,7 +2,7 @@ import { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
 
 import { verify } from "@/utils/jwt";
-import { validators } from "@/middlewares/zodValidators";
+import { validators } from "@/middlewares/zod-validators";
 
 export async function authMiddleware(c: Context, next: Next) {
   const token = getCookie(c, "access_token");

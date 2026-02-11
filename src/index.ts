@@ -7,7 +7,7 @@ import { health } from "@/routes/health";
 
 import { errors } from "@/middlewares/errors";
 import { authMiddleware } from "@/middlewares/auth";
-import { validators } from "@/middlewares/zodValidators";
+import { validators } from "@/middlewares/zod-validators";
 
 const app = new Hono().basePath("/api/");
 

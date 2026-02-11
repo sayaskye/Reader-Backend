@@ -2,7 +2,7 @@ import type { Context } from "hono";
 
 import { hashPassword } from "@/utils/argon";
 import { UsersService } from "@/services/users";
-import { validators } from "@/middlewares/zodValidators";
+import { validators } from "@/middlewares/zod-validators";
 
 export class UsersController {
   static async getAll(c: Context) {

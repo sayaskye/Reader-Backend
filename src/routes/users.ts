@@ -7,7 +7,7 @@ import {
   validateUUID,
 } from "@/schemas/users";
 
-import { validateBody, validateParam } from "@/middlewares/zodValidators";
+import { validateBody, validateParam } from "@/middlewares/zod-validators";
 
 export const users = new Hono();
 

@@ -2,8 +2,8 @@ import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
 
 import { AuthService, messages } from "@/services/auth";
-import { validators } from "@/middlewares/zodValidators";
-import { clearAuthCookie, setAuthCookie, tokenTypes } from "@/utils/setCookies";
+import { validators } from "@/middlewares/zod-validators";
+import { clearAuthCookie, setAuthCookie, tokenTypes } from "@/utils/auth-cookies";
 
 export class AuthController {
   static async login(c: Context) {
