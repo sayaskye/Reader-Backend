@@ -21,10 +21,6 @@ app.route("/users", users);
 app.route("/auth", auth);
 app.route("/roles", roles);
 
-//TODO: Delete this
-//@ts-ignore
-app.get("/", authMiddleware, (c) => c.json({message: 'Protected route!', user: c.get(validators.VALIDATED_ID)}, 200))
-
 export default {
   port: process.env.PORT ?? 3000,
   fetch: app.fetch,
