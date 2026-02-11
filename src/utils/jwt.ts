@@ -4,8 +4,8 @@ import { randomUUID } from "crypto";
 const accessSecret = new TextEncoder().encode(process.env.JWT_SECRET);
 const refreshSecret = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET);
 
-export async function createJWT(userId: string) {
-  return new SignJWT({})
+export async function createJWT(userId: string, roles: string[] = ["User"]) {
+  return new SignJWT({ roles })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
     .setIssuedAt()

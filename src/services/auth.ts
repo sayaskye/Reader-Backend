@@ -21,13 +21,27 @@ export class AuthService {
     try {
       const user = await db.query.users.findFirst({
         where: eq(users.email, body.email),
+        with: {
+          roles: {
+            columns: {},
+            with: {
+              role: {
+                columns: { name: true },
+              },
+            },
+          },
+        },
       });
       if (!user) return messages.invalid;
 
       const verified = await verifyPassword(user.passwordHash, body.password);
       if (!verified) return messages.invalid;
       
-      const accessToken = await createJWT(user.id);
+      const cleanedUser = {
+        ...user,
+        roles: user.roles.map((r) => r.role.name),
+      };
+      const accessToken = await createJWT(user.id, cleanedUser.roles);
       const { refreshToken, jti } = await createRefreshToken(user.id);
       
       const refreshTokenHash = hashToken(refreshToken);
@@ -98,7 +112,25 @@ export class AuthService {
       });
       if(!insertNewToken) return messages.dbUnknown
 
-      const newAccess = await createJWT(stored.userId);
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, stored.userId),
+        with: {
+          roles: {
+            columns: {},
+            with: {
+              role: {
+                columns: { name: true },
+              },
+            },
+          },
+        },
+      });
+      if (!user) return messages.invalid;
+      const cleanedUser = {
+        ...user,
+        roles: user.roles.map((r) => r.role.name),
+      };
+      const newAccess = await createJWT(stored.userId, cleanedUser.roles);
 
       return {
         accessToken: newAccess,
