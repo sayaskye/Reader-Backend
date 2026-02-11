@@ -62,13 +62,21 @@ export class UsersController {
     return c.json({ error: "Couldn't patch user" }, 404);
   }
 
-  static async delete(c: Context) {
-    const deleted = await UsersService.delete(
-      c.get(validators.VALIDATED_PARAM),
-    );
+  private static async internalDelete(c: Context, id: string) {
+    const deleted = await UsersService.delete(id);
     if (deleted) {
-      return c.json({ "Succesfully deleted user: ": deleted }, 200);
+      return c.json({ "Succesfully deleted user": deleted }, 200);
     }
     return c.json({ error: "User not found" }, 404);
+  }
+
+  static async deleteMe(c: Context) {
+    const id = c.get(validators.VALIDATED_ID);
+    return this.internalDelete(c, id);
+  }
+
+  static async deleteById(c: Context) {
+    const id = c.get(validators.VALIDATED_PARAM);
+    return this.internalDelete(c, id);
   }
 }

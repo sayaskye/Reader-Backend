@@ -5,17 +5,15 @@ import { validateUUID } from "@/schemas/id";
 import { validatePartialUser } from "@/schemas/users";
 
 import { validateBody, validateParam } from "@/middlewares/zod-validators";
-import { authMiddleware } from "@/middlewares/auth";
+import { authMiddleware, requireAdmin } from "@/middlewares/auth";
 
 export const users = new Hono();
 
-//TODO: user can delete their account if they want to
 users.get("/me", authMiddleware, UsersController.getId);
-//TODO: only user who asked and confirmed their identity can update their info
 users.patch("/me", authMiddleware, validateBody(validatePartialUser), UsersController.partialUpdate);
+users.delete("/me", authMiddleware, UsersController.deleteMe);
 
-//TODO: Adjust endpoints by roles, only admin can delete and watch all users
-users.get("/", UsersController.getAll);
-users.get("/:id", validateParam(validateUUID, "id"), UsersController.getId);
-users.patch("/:id", validateBody(validatePartialUser), validateParam(validateUUID, "id"), UsersController.partialUpdate);
-users.delete("/:id", validateParam(validateUUID, "id"), UsersController.delete);
+users.get("/",authMiddleware, requireAdmin, UsersController.getAll);
+users.get("/:id",authMiddleware, requireAdmin, validateParam(validateUUID, "id"), UsersController.getId);
+users.patch("/:id",authMiddleware, requireAdmin, validateBody(validatePartialUser), validateParam(validateUUID, "id"), UsersController.partialUpdate);
+users.delete("/:id",authMiddleware, requireAdmin, validateParam(validateUUID, "id"), UsersController.deleteById);
