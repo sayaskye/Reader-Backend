@@ -5,6 +5,8 @@ import {
   integer,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
 import { users } from "@/db/schema/users";
 import { books } from "@/db/schema/books";
 
@@ -32,7 +34,16 @@ export const userBooks = pgTable(
 
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (t) => [
-    uniqueIndex("user_books_unique").on(t.userId, t.bookId),
-  ]
+  (t) => [uniqueIndex("user_books_unique").on(t.userId, t.bookId)],
 );
+
+export const userBooksRelations = relations(userBooks, ({ one }) => ({
+  user: one(users, {
+    fields: [userBooks.userId],
+    references: [users.id],
+  }),
+  book: one(books, {
+    fields: [userBooks.bookId],
+    references: [books.id],
+  }),
+}));

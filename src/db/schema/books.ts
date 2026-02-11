@@ -6,7 +6,11 @@ import {
   bigint,
   jsonb,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
 import { users } from "@/db/schema/users";
+import { userBooks } from "@/db/schema/user-books";
+import { sharedBooks } from "@/db/schema/shared-books";
 
 export const books = pgTable("books", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -35,3 +39,12 @@ export const books = pgTable("books", {
 
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
+
+export const booksRelations = relations(books, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [books.ownerId],
+    references: [users.id],
+  }),
+  userBooks: many(userBooks),
+  sharedBooks: many(sharedBooks),
+}));

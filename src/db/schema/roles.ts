@@ -5,6 +5,9 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+import { userRoles } from "@/db/schema/user-roles";
 
 export const roles = pgTable(
   "roles",
@@ -16,7 +19,9 @@ export const roles = pgTable(
       .notNull(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (t) => [
-    uniqueIndex("roles_name_unique").on(t.name),
-  ]
+  (t) => [uniqueIndex("roles_name_unique").on(t.name)],
 );
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  users: many(userRoles),
+}));
