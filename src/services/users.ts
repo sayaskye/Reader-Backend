@@ -12,14 +12,14 @@ export class UsersService {
     return await db.query.users.findMany({
       limit: limit,
       offset: offset,
-      columns: { passwordHash: false },
+      columns: { passwordHash: false, deletedAt: false, createdAt: false },
     });
   }
 
   static async getById(id: string) {
     const result = await db.query.users.findFirst({
       where: eq(users.id, id),
-      columns: { passwordHash: false },
+      columns: { passwordHash: false, deletedAt: false, createdAt: false },
     });
     return result ?? null;
   }
@@ -33,20 +33,20 @@ export class UsersService {
           passwordHash,
         })
         .returning(publicColumns);
-        
+
       const role = await tx.query.roles.findFirst({
         where: eq(roles.name, "User"),
       });
       if (!role) {
-        return null
+        return null;
       }
 
       await tx.insert(userRoles).values({
         userId: user.id,
         roleId: role.id,
       });
-      return user
-    })
+      return user;
+    });
   }
 
   static async update(id: string, data: User) {
