@@ -10,10 +10,10 @@ import { authMiddleware, requireAdmin } from "@/middlewares/auth";
 export const users = new Hono();
 
 users.get("/me", authMiddleware, UsersController.getId);
-users.patch("/me", authMiddleware, validateBody(validatePartialUser), UsersController.partialUpdate);
+users.patch("/me", authMiddleware, validateBody(validatePartialUser), UsersController.partialUpdateMe);
 users.delete("/me", authMiddleware, UsersController.deleteMe);
 
 users.get("/",authMiddleware, requireAdmin, UsersController.getAll);
 users.get("/:id",authMiddleware, requireAdmin, validateParam(validateUUID, "id"), UsersController.getId);
-users.patch("/:id",authMiddleware, requireAdmin, validateBody(validatePartialUser), validateParam(validateUUID, "id"), UsersController.partialUpdate);
+users.patch("/:id",authMiddleware, requireAdmin, validateBody(validatePartialUser), validateParam(validateUUID, "id"), UsersController.partialUpdateId);
 users.delete("/:id",authMiddleware, requireAdmin, validateParam(validateUUID, "id"), UsersController.deleteById);

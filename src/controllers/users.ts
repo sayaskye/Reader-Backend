@@ -22,27 +22,56 @@ export class UsersController {
     return c.json({ error: "Couldn't find users" }, 404);
   }
 
-  static async getId(c: Context) {
-    const user = await UsersService.getById(c.get(validators.VALIDATED_ID));
+  private static async internalGetId(c: Context, id: string) {
+    const user = await UsersService.getById(c.get(id));
     if (user) {
       return c.json(user, 200);
     }
     return c.json({ error: "User not found" }, 404);
   }
 
+  static async getMe(c: Context) {
+    const id = c.get(validators.VALIDATED_ID);
+    return this.internalGetId(c, id);
+  }
+
+  static async getId(c: Context) {
+    const id = c.get(validators.VALIDATED_PARAM);
+    return this.internalGetId(c, id);
+  }
+
   static async create(c: Context) {
     const body = c.get(validators.VALIDATED_BODY);
-    const passwordHash = await hashPassword(body.password)
+    const passwordHash = await hashPassword(body.password);
     const user = await UsersService.create(body, passwordHash);
     if (user) {
       return c.json(user, 201);
     }
     return c.json({ error: "Couldn't create user" }, 404);
   }
-
-  static async update(c: Context) {
+  private static async internalPut(c: Context, id: string) {
     const user = await UsersService.update(
-      c.get(validators.VALIDATED_PARAM),
+      c.get(id),
+      c.get(validators.VALIDATED_BODY),
+    );
+    if (user) {
+      return c.json(user, 200);
+    }
+    return c.json({ error: "Couldn't update user" }, 404);
+  }
+  static async updateMe(c: Context) {
+    const id = c.get(validators.VALIDATED_PARAM);
+    return this.internalPut(c, id);
+  }
+
+  static async updateId(c: Context) {
+    const id = c.get(validators.VALIDATED_PARAM);
+    return this.internalPut(c, id);
+  }
+
+  private static async internalPatch(c: Context, id: string) {
+    const user = await UsersService.partialUpdate(
+      c.get(id),
       c.get(validators.VALIDATED_BODY),
     );
     if (user) {
@@ -51,15 +80,14 @@ export class UsersController {
     return c.json({ error: "Couldn't update user" }, 404);
   }
 
-  static async partialUpdate(c: Context) {
-    const user = await UsersService.partialUpdate(
-      c.get(validators.VALIDATED_ID),
-      c.get(validators.VALIDATED_BODY),
-    );
-    if (user) {
-      return c.json(user, 200);
-    }
-    return c.json({ error: "Couldn't patch user" }, 404);
+  static async partialUpdateMe(c: Context) {
+    const id = c.get(validators.VALIDATED_PARAM);
+    return this.internalPatch(c, id);
+  }
+
+  static async partialUpdateId(c: Context) {
+    const id = c.get(validators.VALIDATED_PARAM);
+    return this.internalPatch(c, id);
   }
 
   private static async internalDelete(c: Context, id: string) {
