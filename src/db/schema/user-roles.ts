@@ -7,6 +7,7 @@ import { roles } from "@/db/schema/roles";
 export const userRoles = pgTable(
   "user_roles",
   {
+    id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

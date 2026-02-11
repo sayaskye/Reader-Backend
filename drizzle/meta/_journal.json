@@ -15,6 +15,13 @@
       "when": 1770785306837,
       "tag": "0001_bitter_dorian_gray",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770791207645,
+      "tag": "0002_numerous_gunslinger",
+      "breakpoints": true
     }
   ]
 }
