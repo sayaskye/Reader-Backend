@@ -5,9 +5,8 @@ import { UsersService } from "@/services/users";
 import { AuthService, messages } from "@/services/auth";
 
 import { validators } from "@/middlewares/zod-validators";
-
-import { hashPassword } from "@/utils/argon";
 import { clearAuthCookie, setAuthCookie, tokenTypes } from "@/utils/auth-cookies";
+import { hashPassword } from "@/utils/argon";
 
 export class AuthController {
   static async register(c: Context) {

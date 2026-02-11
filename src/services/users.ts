@@ -1,8 +1,7 @@
 import { eq, getTableColumns } from "drizzle-orm";
 
-
 import { db } from "@/db/client";
-import { users } from "@/db/schema";
+import { users, roles, userRoles } from "@/db/schema";
 
 import { CreateUser, User } from "@/schemas/users";
 
@@ -10,7 +9,7 @@ const { passwordHash, ...publicColumns } = getTableColumns(users);
 export class UsersService {
   static async getAll(page = 1, limit = 10) {
     const offset = (page - 1) * limit;
-    return await await db.query.users.findMany({
+    return await db.query.users.findMany({
       limit: limit,
       offset: offset,
       columns: { passwordHash: false },
@@ -26,14 +25,28 @@ export class UsersService {
   }
 
   static async create(data: CreateUser, passwordHash: string) {
-    const result = await db
-      .insert(users)
-      .values({
-        ...data,
-        passwordHash,
-      })
-      .returning(publicColumns);
-    return result[0];
+    return db.transaction(async (tx) => {
+      const [user] = await tx
+        .insert(users)
+        .values({
+          ...data,
+          passwordHash,
+        })
+        .returning(publicColumns);
+        
+      const role = await tx.query.roles.findFirst({
+        where: eq(roles.name, "User"),
+      });
+      if (!role) {
+        return null
+      }
+
+      await tx.insert(userRoles).values({
+        userId: user.id,
+        roleId: role.id,
+      });
+      return user
+    })
   }
 
   static async update(id: string, data: User) {
