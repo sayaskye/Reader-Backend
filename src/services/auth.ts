@@ -1,13 +1,14 @@
 import { and, eq, isNull } from "drizzle-orm";
 
+import { db } from "@/db/client";
+import { Login } from "@/schemas/auth";
+import { refreshTokens, users } from "@/db/schema";
+
 import { addDays } from "@/utils/time";
 import { hashToken } from "@/utils/hash";
 import { verifyPassword } from "@/utils/argon";
 import { createJWT, createRefreshToken, verify } from "@/utils/jwt";
-
-import { db } from "@/db/client";
-import { refreshTokens, users } from "@/db/schema";
-import { Login } from "@/schemas/auth";
+import { userWithRolesConfig } from "@/utils/query-configs";
 
 export enum messages {
   invalid = "Invalid credentials",
@@ -16,50 +17,56 @@ export enum messages {
   unknown = "Something went wrong",
 }
 
+
 export class AuthService {
+  static async findUser(whereClause: any) {
+    const result = await db.query.users.findFirst({
+      where: whereClause,
+      ...userWithRolesConfig,
+    });
+
+    if (!result) return null;
+    return {
+      ...result,
+      roles: result.roles.map((r) => r.role.name),
+    };
+  }
+
+  static async getUserById(userId: string) {
+    return AuthService.findUser(eq(users.id, userId));
+  }
+
+  static async getUserByEmail(email: string) {
+    return AuthService.findUser(eq(users.email, email));
+  }
+
   static async login(body: Login) {
     try {
-      const user = await db.query.users.findFirst({
-        where: eq(users.email, body.email),
-        with: {
-          roles: {
-            columns: {},
-            with: {
-              role: {
-                columns: { name: true },
-              },
-            },
-          },
-        },
-      });
+      const user = await AuthService.getUserByEmail(body.email);
       if (!user) return messages.invalid;
 
       const verified = await verifyPassword(user.passwordHash, body.password);
       if (!verified) return messages.invalid;
-      
-      const cleanedUser = {
-        ...user,
-        roles: user.roles.map((r) => r.role.name),
-      };
-      const accessToken = await createJWT(user.id, cleanedUser.roles);
+
+      const accessToken = await createJWT(user.id, user.roles);
       const { refreshToken, jti } = await createRefreshToken(user.id);
-      
+
       const refreshTokenHash = hashToken(refreshToken);
-      
+
       const insert = await db.insert(refreshTokens).values({
         id: jti,
         userId: user.id,
         tokenHash: refreshTokenHash,
         expiresAt: addDays(new Date(), 30),
       });
-      if(!insert) return messages.dbUnknown
+
+      if (!insert) return messages.dbUnknown;
 
       return {
         accessToken,
         refreshToken,
       };
-      
-    } catch (error) {
+    } catch {
       return messages.unknown;
     }
   }
@@ -67,75 +74,61 @@ export class AuthService {
   static async refresh(refreshToken: string) {
     try {
       const { payload } = await verify(refreshToken);
-
       if (payload.type !== "refresh") return messages.invalid;
 
       const tokenHash = hashToken(refreshToken);
 
-      const stored = await db.query.refreshTokens.findFirst({
-        where: and(
-          eq(refreshTokens.id, payload.jti as string),
-          eq(refreshTokens.tokenHash, tokenHash),
-          eq(refreshTokens.revoked, false),
-          isNull(refreshTokens.deletedAt),
-        ),
-      });
+      return await db.transaction(async (tx) => {
+        const stored = await tx.query.refreshTokens.findFirst({
+          where: and(
+            eq(refreshTokens.id, payload.jti as string),
+            eq(refreshTokens.tokenHash, tokenHash),
+            eq(refreshTokens.revoked, false),
+            isNull(refreshTokens.deletedAt),
+          ),
+        });
 
-      if (!stored) return messages.invalid;
+        if (!stored) return messages.invalid;
 
-      if (stored.usedAt) {
-        await db
+        if (stored.usedAt) {
+          await tx
+            .update(refreshTokens)
+            .set({ revoked: true })
+            .where(eq(refreshTokens.userId, stored.userId));
+
+          return messages.invalidToken;
+        }
+
+        if (stored.expiresAt < new Date()) return messages.invalidToken;
+
+        await tx
           .update(refreshTokens)
-          .set({ revoked: true })
-          .where(eq(refreshTokens.userId, stored.userId));
+          .set({ usedAt: new Date() })
+          .where(eq(refreshTokens.id, stored.id));
 
-        return messages.invalidToken;
-      }
+        const { refreshToken: newRefresh, jti } = await createRefreshToken(
+          stored.userId,
+        );
 
-      if (stored.expiresAt < new Date()) return messages.invalidToken;
+        const newHash = hashToken(newRefresh);
 
-      const insertNewUsedToken = await db
-        .update(refreshTokens)
-        .set({ usedAt: new Date() })
-        .where(eq(refreshTokens.id, stored.id));
-      if(!insertNewUsedToken) return messages.dbUnknown
+        await tx.insert(refreshTokens).values({
+          id: jti,
+          userId: stored.userId,
+          tokenHash: newHash,
+          expiresAt: addDays(new Date(), 30),
+        });
 
-      const { refreshToken: newRefresh, jti } = await createRefreshToken(
-        stored.userId,
-      );
-      const newHash = hashToken(newRefresh);
-      const insertNewToken = await db.insert(refreshTokens).values({
-        id: jti,
-        userId: stored.userId,
-        tokenHash: newHash,
-        expiresAt: addDays(new Date(), 30),
+        const user = await AuthService.getUserById(stored.userId);
+        if (!user) return messages.invalid;
+
+        const newAccess = await createJWT(stored.userId, user.roles);
+
+        return {
+          accessToken: newAccess,
+          refreshToken: newRefresh,
+        };
       });
-      if(!insertNewToken) return messages.dbUnknown
-
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, stored.userId),
-        with: {
-          roles: {
-            columns: {},
-            with: {
-              role: {
-                columns: { name: true },
-              },
-            },
-          },
-        },
-      });
-      if (!user) return messages.invalid;
-      const cleanedUser = {
-        ...user,
-        roles: user.roles.map((r) => r.role.name),
-      };
-      const newAccess = await createJWT(stored.userId, cleanedUser.roles);
-
-      return {
-        accessToken: newAccess,
-        refreshToken: newRefresh,
-      };
     } catch {
       return messages.invalid;
     }

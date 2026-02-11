@@ -23,7 +23,6 @@ export class UsersController {
   }
 
   static async internalGetId(c: Context, id: string) {
-    console.log("aa")
     const user = await UsersService.getById(id);
     if (user) {
       return c.json(user, 200);
