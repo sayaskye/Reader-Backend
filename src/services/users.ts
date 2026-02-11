@@ -19,23 +19,24 @@ export class UsersService {
   static async getById(id: string) {
     const result = await db.query.users.findFirst({
       where: eq(users.id, id),
-      columns: { passwordHash: false, deletedAt: false, createdAt: false },with: {
+      columns: { passwordHash: false, deletedAt: false, createdAt: false },
+      with: {
         roles: {
-          columns:{},
+          columns: {},
           with: {
             role: {
-              columns: { name: true }
-            }
-          }
-        }
-      }
+              columns: { name: true },
+            },
+          },
+        },
+      },
     });
     if (result && result.roles) {
       const cleanedUser = {
         ...result,
-        roles: result.roles.map(r => r.role.name)
+        roles: result.roles.map((r) => r.role.name),
       };
-      return cleanedUser
+      return cleanedUser;
     }
     return null;
   }
