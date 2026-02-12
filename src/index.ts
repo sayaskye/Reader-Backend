@@ -3,6 +3,7 @@ import { logger } from "hono/logger";
 
 import { auth } from "@/routes/auth";
 import { users } from "@/routes/users";
+import { books } from "@/routes/books";
 import { roles } from "@/routes/roles";
 import { userRoles } from "@/routes/user-roles";
 import { health } from "@/routes/health";
@@ -17,6 +18,7 @@ app.onError(errors);
 
 app.route("/health", health);
 app.route("/users", users);
+app.route("/books", books);
 app.route("/auth", auth);
 app.route("/roles", roles);
 app.route("/user-roles", userRoles);
