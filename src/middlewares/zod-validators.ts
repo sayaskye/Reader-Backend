@@ -1,7 +1,7 @@
 import type { Context, Next } from "hono";
 
 export enum validators {
-  VALIDATED_PARAM = "validatedParam",
+  VALIDATED_PARAMS = "validatedParam",
   VALIDATED_BODY = "validatedBody",
   VALIDATED_ID = "userId",
 }
@@ -30,14 +30,17 @@ export const validateBody = (fn: any) => async (c: Context, next: Next) => {
 };
 
 export const validateParam =
-  (fn: any, key: string) =>
-  async (c: Context, next: Next) => {
-    const paramValue = { [key]: c.req.param(key) };
-    const r = fn(paramValue);
+  (fn: any, key: string) => async (c: Context, next: Next) => {
+    const value = c.req.param(key);
+    const r = fn(value);
 
     if (r.success) {
       const data = r.data as Record<string, any>;
-      c.set(validators.VALIDATED_PARAM, data[key]);
+      const existing = c.get(validators.VALIDATED_PARAMS) ?? {};
+      c.set(validators.VALIDATED_PARAMS, {
+        ...existing,
+        [key]: data,
+      });
       return await next();
     }
 

@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { auth } from "@/routes/auth";
 import { users } from "@/routes/users";
 import { roles } from "@/routes/roles";
+import { userRoles } from "@/routes/user-roles";
 import { health } from "@/routes/health";
 
 import { errors } from "@/middlewares/errors";
@@ -18,6 +19,7 @@ app.route("/health", health);
 app.route("/users", users);
 app.route("/auth", auth);
 app.route("/roles", roles);
+app.route("/user-roles", userRoles);
 
 export default {
   port: process.env.PORT ?? 3000,

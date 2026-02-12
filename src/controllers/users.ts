@@ -36,8 +36,8 @@ export class UsersController {
   }
 
   static async getById(c: Context) {
-    const id = c.get(validators.VALIDATED_PARAM);
-    return UsersController.internalGetId(c, id);
+    const params = c.get(validators.VALIDATED_PARAMS);
+    return UsersController.internalGetId(c, params.id);
   }
 
   static async create(c: Context) {
@@ -65,8 +65,8 @@ export class UsersController {
   }
 
   static async updateId(c: Context) {
-    const id = c.get(validators.VALIDATED_PARAM);
-    return UsersController.internalPut(c, id);
+    const params = c.get(validators.VALIDATED_PARAMS);
+    return UsersController.internalPut(c, params.id);
   }
 
   static async internalPatch(c: Context, id: string) {
@@ -86,8 +86,8 @@ export class UsersController {
   }
 
   static async partialUpdateId(c: Context) {
-    const id = c.get(validators.VALIDATED_PARAM);
-    return UsersController.internalPatch(c, id);
+    const params = c.get(validators.VALIDATED_PARAMS);
+    return UsersController.internalPatch(c, params.id);
   }
 
   static async internalDelete(c: Context, id: string) {
@@ -104,7 +104,7 @@ export class UsersController {
   }
 
   static async deleteById(c: Context) {
-    const id = c.get(validators.VALIDATED_PARAM);
-    return UsersController.internalDelete(c, id);
+    const params = c.get(validators.VALIDATED_PARAMS);
+    return UsersController.internalDelete(c, params.id);
   }
 }

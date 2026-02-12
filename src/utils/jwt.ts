@@ -23,8 +23,7 @@ export async function createRefreshToken(userId: string) {
   .setIssuedAt()
   .setExpirationTime("30d")
   .sign(refreshSecret);
-  
-  console.log("Verifica");
+
   return { refreshToken: token, jti };
 }
 

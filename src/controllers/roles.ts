@@ -38,20 +38,10 @@ export class RolesController {
     return c.json({ error: "Couldn't create role" }, 404);
   }
 
-  static async update(c: Context) {
-    const role = await RolesService.update(
-      c.get(validators.VALIDATED_PARAM),
-      c.get(validators.VALIDATED_BODY),
-    );
-    if (role) {
-      return c.json(role, 200);
-    }
-    return c.json({ error: "Couldn't update role" }, 404);
-  }
-
   static async partialUpdate(c: Context) {
+    const params = c.get(validators.VALIDATED_PARAMS);
     const role = await RolesService.partialUpdate(
-      c.get(validators.VALIDATED_ID),
+      params.id,
       c.get(validators.VALIDATED_BODY),
     );
     if (role) {
@@ -61,9 +51,8 @@ export class RolesController {
   }
 
   static async delete(c: Context) {
-    const deleted = await RolesService.delete(
-      c.get(validators.VALIDATED_PARAM),
-    );
+    const params = c.get(validators.VALIDATED_PARAMS);
+    const deleted = await RolesService.delete(params.id);
     if (deleted) {
       return c.json({ "Succesfully deleted role: ": deleted }, 200);
     }
