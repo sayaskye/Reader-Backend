@@ -11,8 +11,6 @@ export class BooksService {
   static async getAll(page = 1, limit = 10, ownerId: string = "") {
     const offset = (page - 1) * limit;
     const filter = ownerId ? eq(books.ownerId, ownerId) : undefined;
-    console.log("Entra");
-    
     return await db.query.books.findMany({
       limit: limit,
       offset: offset,
