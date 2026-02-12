@@ -24,6 +24,7 @@ export const books = pgTable("books", {
   tableOfContents: jsonb("table_of_contents").$type<string[]>(),
   fileSize: bigint("file_size", { mode: "bigint" }).notNull(),
   filename: text("filename").notNull(),
+  fileHash: text("file_hash").notNull(),
   ownerId: uuid("owner_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
