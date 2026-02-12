@@ -4,11 +4,20 @@ import {
   timestamp,
   integer,
   uniqueIndex,
+  pgEnum,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 import { users } from "@/db/schema/users";
 import { books } from "@/db/schema/books";
+
+export const readingStatusEnum = pgEnum("reading_status", [
+  "to-read",
+  "reading",
+  "completed",
+  "on-hold",
+]);
 
 export const userBooks = pgTable(
   "user_books",
@@ -21,11 +30,15 @@ export const userBooks = pgTable(
     bookId: uuid("book_id")
       .notNull()
       .references(() => books.id, { onDelete: "cascade" }),
-    lastPosition: integer("last_position"),
+    status: readingStatusEnum("status").default("to-read").notNull(),
+    lastPosition: integer("last_position").default(0),
+    totalPages: integer("total_pages"),
+    isFavorite: boolean("is_favorite").default(false).notNull(),
     dateAddedAt: timestamp("date_added_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
     lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
