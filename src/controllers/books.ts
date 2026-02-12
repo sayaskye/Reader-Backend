@@ -64,6 +64,27 @@ export class BooksController {
   static async createBook(c: Context) {
     const ownerId = c.get(validators.VALIDATED_ID);
     const body = c.get(validators.VALIDATED_BODY);
+    //TODO: validate with zod the file
+    //TODO: insert in body urls
+    /* const body = await c.req.parseBody();
+    const file = body.file as File;
+    if (!file) return c.json({ error: "Didn't upload any file" }, 400);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { metadata, coverBuffer, mimeType, version, toc } = await EpubService.extractData(buffer);
+    if (!metadata)
+      return c.json({ error: "Couldn't get metadata from the file" }, 404);
+    if (!coverBuffer || !mimeType)
+      return c.json({ error: "Couldn't get cover from the file" }, 404);
+
+    const coverUrl = await StorageService.uploadImage(coverBuffer, {
+      fileName: `${crypto.randomUUID()}.jpg`,
+      contentType: mimeType
+    });
+
+    const bookUrl = await StorageService.uploadEpub(buffer, {
+      fileName: `${crypto.randomUUID()}.epub`
+    }); 
+    */
     const book = await BooksService.create(body, ownerId);
     if (book) {
       return c.json(book, 201);
