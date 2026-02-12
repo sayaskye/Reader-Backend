@@ -8,7 +8,7 @@ import { authMiddleware } from "@/middlewares/auth";
 
 export const auth = new Hono();
 
-auth.post("/register", validateBody(validateRegister), AuthController.register)
+auth.post("/register", validateBody(validateRegister), AuthController.register);
 auth.post("/login", validateBody(validateLogin), AuthController.login);
 auth.post("/refresh", authMiddleware, AuthController.refresh);
-auth.post("/logout", AuthController.logout)
+auth.post("/logout", AuthController.logout);
