@@ -34,7 +34,7 @@ export const mapDbError = (err: unknown) => {
       case PG_ERRORS.NOT_NULL_VIOLATION:
         return { status: 400 as ContentfulStatusCode, message: "Null not allowed." };
       default:
-        return { status: 500 as ContentfulStatusCode, message: "Internal Server Error" };
+        return { status: 500 as ContentfulStatusCode, message: "Internal Server (DB) Error" };
     }
   }
   return { status: 500 as ContentfulStatusCode, message: "Internal Server Error" };
