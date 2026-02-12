@@ -10,7 +10,7 @@ export class BooksController {
     const file = body.file as File;
     if (!file) return c.json({ error: "Didn't upload any file" }, 400);
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { metadata, coverBuffer, mimeType } = await EpubService.extractData(buffer);
+    const { metadata, coverBuffer, mimeType, version, toc } = await EpubService.extractData(buffer);
     if (!metadata)
       return c.json({ error: "Couldn't get metadata from the file" }, 404);
     if (!coverBuffer || !mimeType)
@@ -19,6 +19,8 @@ export class BooksController {
     return c.json({
       success: true,
       metadata,
+      version,
+      toc,
       hasCover: !!coverBuffer,
       mimeType
     });

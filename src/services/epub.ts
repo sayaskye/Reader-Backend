@@ -9,9 +9,17 @@ type EpubMetadata = {
   description: string;
 };
 
+type TocItem = {
+  title: string;
+  href: string;
+  children?: TocItem[];
+};
+
 export class EpubService {
   static async extractData(fileBuffer: Buffer): Promise<{
     metadata: EpubMetadata;
+    version: string;
+    toc: TocItem[] | null;
     coverBuffer: Buffer | null;
     mimeType: string | null;
   }> {
@@ -39,6 +47,9 @@ export class EpubService {
     const pkg = opfJson.package;
     const metadataNode = pkg.metadata;
 
+    // Extract version
+    const version: string = pkg.$.version || "Unknown";
+
     // Normalize manifest items to always be an array
     const manifest: any[] = Array.isArray(pkg.manifest.item)
       ? pkg.manifest.item
@@ -54,10 +65,13 @@ export class EpubService {
       description: metadataNode.description || "",
     };
 
-    // 4. Find and extract cover image
+    // 4. Extract Table of Contents (TOC)
+    const toc = await this.extractToc(zip, opfPath, manifest, version);
+
+    // 5. Find and extract cover image
     const coverItem = this.findCoverItem(manifest);
     if (!coverItem) {
-      return { metadata, coverBuffer: null, mimeType: null };
+      return { metadata, version, toc, coverBuffer: null, mimeType: null };
     }
 
     const coverPath = this.resolveZipPath(opfPath, coverItem.$.href);
@@ -70,16 +84,122 @@ export class EpubService {
         f.name.endsWith(filename),
       );
 
-      if (!fallbackFile) return { metadata, coverBuffer: null, mimeType: null };
+      if (!fallbackFile)
+        return { metadata, version, toc, coverBuffer: null, mimeType: null };
 
       const coverBuffer = Buffer.from(await fallbackFile.async("arraybuffer"));
-      return { metadata, coverBuffer, mimeType: coverItem.$["media-type"] };
+      return {
+        metadata,
+        version,
+        toc,
+        coverBuffer,
+        mimeType: coverItem.$["media-type"],
+      };
     }
 
     const coverBuffer = Buffer.from(await coverFile.async("arraybuffer"));
     const mimeType = coverItem.$["media-type"] ?? null;
 
-    return { metadata, coverBuffer, mimeType };
+    return { metadata, version, toc, coverBuffer, mimeType };
+  }
+
+  /**
+   * Extracts the Table of Contents based on EPUB version.
+   */
+  private static async extractToc(
+    zip: JSZip,
+    opfPath: string,
+    manifest: any[],
+    version: string,
+  ): Promise<TocItem[] | null> {
+    let tocPath: string | undefined;
+    let isNcx = false;
+
+    if (version.startsWith("2")) {
+      // EPUB 2: Find NCX file (application/x-dtbncx+xml)
+      const ncxItem = manifest.find(
+        (i) => i.$["media-type"] === "application/x-dtbncx+xml",
+      );
+      if (!ncxItem) return null;
+      tocPath = this.resolveZipPath(opfPath, ncxItem.$.href);
+      isNcx = true;
+    } else if (version.startsWith("3")) {
+      // EPUB 3: Find item with properties="nav"
+      const navItem = manifest.find((i) => i.$?.properties?.includes("nav"));
+      if (!navItem) {
+        // Fallback to NCX if present for compatibility
+        const ncxItem = manifest.find(
+          (i) => i.$["media-type"] === "application/x-dtbncx+xml",
+        );
+        if (ncxItem) {
+          tocPath = this.resolveZipPath(opfPath, ncxItem.$.href);
+          isNcx = true;
+        } else {
+          return null;
+        }
+      } else {
+        tocPath = this.resolveZipPath(opfPath, navItem.$.href);
+      }
+    } else {
+      return null;
+    }
+
+    const tocXml = await zip.file(tocPath)?.async("string");
+    if (!tocXml) return null;
+
+    if (isNcx) {
+      // Parse NCX (EPUB 2)
+      const ncxJson = await parseStringPromise(tocXml, {
+        tagNameProcessors: [processors.stripPrefix],
+        explicitArray: false,
+      });
+      const navMap = ncxJson.ncx.navMap;
+      return this.parseNcxNavPoints(navMap.navPoint);
+    } else {
+      // Parse XHTML Nav (EPUB 3)
+      const navJson = await parseStringPromise(tocXml, {
+        tagNameProcessors: [processors.stripPrefix],
+        explicitArray: false,
+      });
+      const navs = navJson.html.body.nav;
+      let tocNav;
+      if (Array.isArray(navs)) {
+        tocNav = navs.find((n: any) => n.$?.["epub:type"] === "toc");
+      } else {
+        tocNav = navs;
+      }
+      if (!tocNav || !tocNav.ol) return null;
+      return this.parseNavOl(tocNav.ol);
+    }
+  }
+
+  /**
+   * Recursively parses NCX navPoints.
+   */
+  private static parseNcxNavPoints(navPoints: any): TocItem[] {
+    if (!navPoints) return [];
+    const points = Array.isArray(navPoints) ? navPoints : [navPoints];
+    return points.map((point: any) => ({
+      title: point.navLabel.text?._ || point.navLabel.text || "",
+      href: point.content.$.src || "",
+      children: this.parseNcxNavPoints(point.navPoint),
+    }));
+  }
+
+  /**
+   * Recursively parses EPUB 3 <ol> <li> structure.
+   */
+  private static parseNavOl(ol: any): TocItem[] {
+    if (!ol) return [];
+    const lis = Array.isArray(ol.li) ? ol.li : [ol.li];
+    return lis.map((li: any) => {
+      const a = li.a;
+      return {
+        title: a?._ || a || "",
+        href: a?.$?.href || "",
+        children: li.ol ? this.parseNavOl(li.ol) : undefined,
+      };
+    });
   }
 
   /**
