@@ -3,8 +3,8 @@ import {
   uuid,
   text,
   timestamp,
-  bigint,
   jsonb,
+  integer
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -22,7 +22,7 @@ export const books = pgTable("books", {
   publisher: text("publisher"),
   description: text("description"),
   tableOfContents: jsonb("table_of_contents").$type<string[]>(),
-  fileSize: bigint("file_size", { mode: "bigint" }).notNull(),
+  fileSize: integer("file_size").notNull(),
   filename: text("filename").notNull(),
   fileHash: text("file_hash").notNull(),
   ownerId: uuid("owner_id")

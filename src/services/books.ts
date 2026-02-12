@@ -38,10 +38,13 @@ export class BooksService {
     return db.transaction(async (tx) => {
       const [book] = await tx
         .insert(books)
-        .values({ ...data })
+        .values({ ...data, ownerId: userId })
         .returning(publicColumns);
-
-      //TODO: continue the transaction for all relations
+      await tx.insert(userBooks).values({
+        userId: userId,
+        bookId: book.id,
+        lastPosition: 0, 
+      });
       return book;
     });
   }

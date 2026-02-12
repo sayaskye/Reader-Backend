@@ -1,0 +1,1 @@
+ALTER TABLE "books" ALTER COLUMN "file_size" SET DATA TYPE integer;
