@@ -1,9 +1,34 @@
 import type { Context } from "hono";
 
+import { EpubService } from "@/services/epub";
 import { BooksService } from "@/services/books";
 import { validators } from "@/middlewares/zod-validators";
 
 export class BooksController {
+  static async TestUpload(c: Context) {
+    const body = await c.req.parseBody();
+    const file = body.file as File;
+    if (!file) return c.json({ error: "Didn't upload any file" }, 400);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { metadata, coverBuffer, mimeType } = await EpubService.extractData(buffer);
+    if (!metadata)
+      return c.json({ error: "Couldn't get metadata from the file" }, 404);
+    if (!coverBuffer || !mimeType)
+      return c.json({ error: "Couldn't get cover from the file" }, 404);
+
+    return c.json({
+      success: true,
+      metadata,
+      hasCover: !!coverBuffer,
+      mimeType
+    });
+    /* return new Response(new Uint8Array(coverBuffer), {
+      headers: {
+        "Content-Type": mimeType, 
+        "X-Book-Title": metadata.title
+      }
+    }); */
+  }
   static async internalGetBooks(c: Context, ownerId: string = "") {
     const page = Number(c.req.query("page") ?? 1);
     const limit = Number(c.req.query("limit") ?? 10);
@@ -56,7 +81,8 @@ export class BooksController {
     const ownerId = c.get(validators.VALIDATED_ID);
     const params = c.get(validators.VALIDATED_PARAMS);
     const book = await BooksService.getById(params.id);
-    if (!book) return c.json({ error: "Didn't found this book on your library" }, 404);
+    if (!book)
+      return c.json({ error: "Didn't found this book on your library" }, 404);
     const isOwnedBy = ownerId === book.id;
     if (!isOwnedBy) return c.json({ error: "User don't own this book" }, 403);
     return BooksController.internalDelete(c, params.id);

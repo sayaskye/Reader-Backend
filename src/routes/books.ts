@@ -9,6 +9,8 @@ import { authMiddleware, requireAdmin } from "@/middlewares/auth";
 
 export const books = new Hono();
 
+books.post("/test", authMiddleware, requireAdmin, BooksController.TestUpload);
+
 //TODO: full flow of creation, validations, extraction, everything
 books.post(
   "/",
