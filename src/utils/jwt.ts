@@ -1,5 +1,4 @@
 import { jwtVerify, SignJWT } from "jose";
-import { randomUUID } from "crypto";
 
 const accessSecret = new TextEncoder().encode(process.env.JWT_SECRET);
 const refreshSecret = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET);
@@ -14,7 +13,7 @@ export async function createJWT(userId: string, roles: string[] = ["User"]) {
 }
 
 export async function createRefreshToken(userId: string) {
-  const jti = randomUUID();
+  const jti = Bun.randomUUIDv7();
   
   const token = await new SignJWT({ type: "refresh" })
   .setProtectedHeader({ alg: "HS256" })
