@@ -13,7 +13,7 @@ export async function createJWT(userId: string, roles: string[] = ["User"]) {
 }
 
 export async function createRefreshToken(userId: string) {
-  const jti = Bun.randomUUIDv7();
+  const jti = crypto.randomUUID()
   
   const token = await new SignJWT({ type: "refresh" })
   .setProtectedHeader({ alg: "HS256" })
