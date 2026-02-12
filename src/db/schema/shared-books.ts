@@ -18,6 +18,8 @@ export const sharedPermissionEnum = pgEnum("shared_permission", [
 export const sharedBooks = pgTable(
   "shared_books",
   {
+    id: uuid("id").defaultRandom().primaryKey(),
+    
     sharedWithId: uuid("shared_with_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

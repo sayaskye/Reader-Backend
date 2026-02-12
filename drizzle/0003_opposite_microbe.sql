@@ -1,0 +1,1 @@
+ALTER TABLE "shared_books" ADD COLUMN "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL;
