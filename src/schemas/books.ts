@@ -17,7 +17,6 @@ export const BookSchema = z.object({
   tableOfContents: z.array(tocItemSchema),
   fileSize: z.int(),
   filename: z.string(),
-  ownerId: z.uuid(),
   fileHash: z.string(),
   uploadedAt: z.date(),
   deletedAt: z.date().nullable().optional(),
@@ -34,7 +33,6 @@ const CreateBookSchema = z.object({
   tableOfContents: z.array(tocItemSchema),
   fileSize: z.int(),
   filename: z.string(),
-  ownerId: z.uuid(),
   fileHash: z.string(),
 });
 

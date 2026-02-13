@@ -55,13 +55,6 @@ export class BooksController {
     }
     return c.json({ error: "Book not found" }, 404);
   }
-  static async internalDelete(c: Context, id: string) {
-    const deleted = await BooksService.delete(id);
-    if (deleted) {
-      return c.json({ "Succesfully deleted book": deleted }, 200);
-    }
-    return c.json({ error: "Book not found" }, 404);
-  }
   static async createBook(c: Context) {
     const ownerId = c.get(validators.VALIDATED_ID);
     const epub = c.get(validators.VALIDATED_EPUB);
@@ -106,14 +99,10 @@ export class BooksController {
     return BooksController.internalGetId(c, params.id, ownerId);
   }
   static async deleteMyBookById(c: Context) {
-    const ownerId = c.get(validators.VALIDATED_ID);
-    const params = c.get(validators.VALIDATED_PARAMS);
-    const book = await BooksService.getById(params.id);
-    if (!book)
-      return c.json({ error: "Didn't found this book on your library" }, 404);
-    const isOwnedBy = ownerId === book.id;
-    if (!isOwnedBy) return c.json({ error: "User don't own this book" }, 403);
-    return BooksController.internalDelete(c, params.id);
+    return c.json({todo: "TODO:"},200)
+  }
+  static async deleteUserBookById(c: Context) {
+    return c.json({todo: "TODO:"},200)
   }
   static async getBooks(c: Context) {
     return BooksController.internalGetBooks(c);
@@ -124,6 +113,10 @@ export class BooksController {
   }
   static async deleteBookById(c: Context) {
     const params = c.get(validators.VALIDATED_PARAMS);
-    return BooksController.internalDelete(c, params.id);
+    const deleted = await BooksService.delete(params.id);
+    if (deleted) {
+      return c.json({ "Succesfully deleted book": deleted }, 200);
+    }
+    return c.json({ error: "Book not found" }, 404);
   }
 }

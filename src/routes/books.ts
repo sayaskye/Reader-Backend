@@ -6,6 +6,7 @@ import { validateUploadEpub } from "@/schemas/upload-epub";
 
 import { validateEPUB, validateParam } from "@/middlewares/zod-validators";
 import { authMiddleware, requireAdmin } from "@/middlewares/auth";
+import { UserBooksController } from "@/controllers/user-books";
 
 export const books = new Hono();
 
@@ -27,7 +28,7 @@ books.delete(
   "/my-books/:id",
   authMiddleware,
   validateParam(validateUUID, "id"),
-  BooksController.deleteMyBookById,
+  UserBooksController.deleteMyBookById,
 );
 
 books.get("/", authMiddleware, requireAdmin, BooksController.getBooks);
@@ -41,8 +42,17 @@ books.get(
 books.delete(
   "/:id",
   authMiddleware,
+  requireAdmin,
   validateParam(validateUUID, "id"),
   BooksController.deleteBookById,
+);
+books.delete(
+  "/user/:userId/book/:bookId",
+  authMiddleware,
+  requireAdmin,
+  validateParam(validateUUID, "bookId"),
+  validateParam(validateUUID, "userId"),
+  UserBooksController.deleteUserBookById,
 );
 
 //There is no need to update info, because all data comes from epub metadata

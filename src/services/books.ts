@@ -1,4 +1,4 @@
-import { and, eq, getTableColumns } from "drizzle-orm";
+import { eq, getTableColumns } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { books, userBooks } from "@/db/schema";
@@ -8,7 +8,7 @@ import { Book } from "@/schemas/books";
 import { calculateEpubHash } from "@/utils/hash";
 import { EpubMetadata } from "@/services/epub";
 
-interface createBody {
+interface CreateBody {
   bookBuffer: Buffer;
   coverBuffer: Buffer;
   metadata: EpubMetadata;
@@ -30,28 +30,62 @@ const { ...publicColumns } = getTableColumns(books);
 export class BooksService {
   static async getAll(page = 1, limit = 10, ownerId: string = "") {
     const offset = (page - 1) * limit;
-    const filter = ownerId ? eq(books.ownerId, ownerId) : undefined;
-    return await db.query.books.findMany({
-      limit: limit,
-      offset: offset,
-      where: filter,
-      columns: {
-        deletedAt: false,
-        uploadedAt: false,
+    // ADMIN MODE
+    if (!ownerId) {
+      return db.query.books.findMany({
+        limit,
+        offset,
+        columns: {
+          deletedAt: false,
+          uploadedAt: false,
+        },
+      });
+    }
+
+    const rows = await db.query.userBooks.findMany({
+      where: (ub, { eq }) => eq(ub.userId, ownerId),
+      limit,
+      offset,
+      with: {
+        book: {
+          columns: {
+            deletedAt: false,
+            uploadedAt: false,
+          },
+        },
       },
     });
+
+    return rows.map((r) => r.book);
   }
 
   static async getById(bookId: string, ownerId: string = "") {
-    const conditions = [eq(books.id, bookId)];
-    if (ownerId) {
-      conditions.push(eq(books.ownerId, ownerId));
+    // ADMIN MODE
+    if (!ownerId) {
+      const book = await db.query.books.findFirst({
+        where: (b, { eq }) => eq(b.id, bookId),
+        columns: {
+          deletedAt: false,
+          uploadedAt: false,
+        },
+      });
+
+      return book ?? null;
     }
-    const result = await db.query.books.findFirst({
-      where: and(...conditions),
-      columns: { deletedAt: false, uploadedAt: false },
+    const result = await db.query.userBooks.findFirst({
+      where: (ub, { eq, and }) =>
+        and(eq(ub.bookId, bookId), eq(ub.userId, ownerId)),
+      columns: {},
+      with: {
+        book: {
+          columns: {
+            deletedAt: false,
+            uploadedAt: false,
+          },
+        },
+      },
     });
-    return result ?? null;
+    return result?.book ?? null;
   }
 
   static async create({
@@ -61,9 +95,26 @@ export class BooksService {
     ownerId,
     toc,
     originalName,
-  }: createBody) {
+  }: CreateBody) {
     const fileSizeInBytes = bookBuffer.length;
     const fileHash = await calculateEpubHash(bookBuffer);
+
+    const existing = await db.query.books.findFirst({
+      where: (b, { eq }) => eq(b.fileHash, fileHash),
+    });
+
+    if (existing) {
+      await db
+        .insert(userBooks)
+        .values({
+          userId: ownerId,
+          bookId: existing.id,
+          lastPosition: 0,
+        })
+        .onConflictDoNothing();
+
+      return existing;
+    }
 
     const coverUrl = await StorageService.uploadImage(coverBuffer, {
       fileName: `${crypto.randomUUID()}.webp`,
@@ -74,7 +125,6 @@ export class BooksService {
     });
 
     const bookData = {
-      ownerId,
       title: metadata.title,
       author: metadata.author,
       description: metadata.description,
