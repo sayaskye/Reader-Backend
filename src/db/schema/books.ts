@@ -11,6 +11,7 @@ import { relations } from "drizzle-orm";
 import { users } from "@/db/schema/users";
 import { userBooks } from "@/db/schema/user-books";
 import { sharedBooks } from "@/db/schema/shared-books";
+import { Toc } from "@/services/books";
 
 export const books = pgTable("books", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -21,7 +22,7 @@ export const books = pgTable("books", {
   language: text("language"),
   publisher: text("publisher"),
   description: text("description"),
-  tableOfContents: jsonb("table_of_contents").$type<string[]>(),
+  tableOfContents: jsonb("table_of_contents").$type<Toc>().notNull().default([]),
   fileSize: integer("file_size").notNull(),
   filename: text("filename").notNull(),
   fileHash: text("file_hash").notNull(),
