@@ -35,6 +35,9 @@ export class UserBooksService {
     userId: string,
     data: Partial<typeof userBooks.$inferInsert>,
   ) {
+    if (data.status === "completed" && !data.finishedAt) {
+      data.finishedAt = new Date();
+    }
     const [updated] = await db
       .update(userBooks)
       .set({

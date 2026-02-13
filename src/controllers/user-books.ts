@@ -23,15 +23,15 @@ export class UserBooksController {
   static async update(c: Context) {
     const userId = c.get(validators.VALIDATED_ID);
     const params = c.get(validators.VALIDATED_PARAMS)
-    const body = await c.req.json();//TODO: VALIDATE
-    const data = {...body, lastReadAt: new Date()}
-
+    const body = await c.get(validators.VALIDATED_BODY);
+    const data = { 
+      ...body, 
+      lastReadAt: body.lastReadAt ?? new Date() 
+    };
     const updated = await UserBooksService.update(params.id, userId, data);
-
     if (!updated) {
       return c.json({ message: "User book not found" }, 404);
     }
-
     return c.json(updated, 200);
   }
   static async toggleFavorite(c: Context) {
