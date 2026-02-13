@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { loopMonitor } from "@/utils/loop-monitor";
+import { getActiveJobs } from "@/utils/concurrency-guard";
 import { db } from "@/db/client";
 
 export class HealthController {
@@ -58,6 +59,8 @@ export class HealthController {
           eventLoopLagMs: lagMs,
           responseTimeMs: Math.round(duration),
         },
+
+        activeUploads: getActiveJobs(),
 
         timestamp: Date.now(),
       },
