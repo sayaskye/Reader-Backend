@@ -3,7 +3,27 @@ import { and, eq, getTableColumns } from "drizzle-orm";
 import { db } from "@/db/client";
 import { books, userBooks } from "@/db/schema";
 
+import { StorageService } from "@/services/storage";
 import { Book } from "@/schemas/books";
+import { calculateEpubHash } from "@/utils/hash";
+import { EpubMetadata } from "@/services/epub";
+
+interface createBody {
+  bookBuffer: Buffer;
+  coverBuffer: Buffer;
+  metadata: EpubMetadata;
+  ownerId: string;
+  toc: Toc;
+  originalName: string;
+}
+
+export interface TocItem {
+  title: string;
+  href: string;
+  children?: TocItem[];
+}
+
+export type Toc = TocItem[];
 
 //edit here if you want to extract by default some columns { deletedAt, ...publicColumns }
 const { ...publicColumns } = getTableColumns(books);
@@ -34,16 +54,49 @@ export class BooksService {
     return result ?? null;
   }
 
-  static async create(data: Book, userId: string) {
+  static async create({
+    bookBuffer,
+    coverBuffer,
+    metadata,
+    ownerId,
+    toc,
+    originalName,
+  }: createBody) {
+    const fileSizeInBytes = bookBuffer.length;
+    const fileHash = await calculateEpubHash(bookBuffer);
+
+    const coverUrl = await StorageService.uploadImage(coverBuffer, {
+      fileName: `${crypto.randomUUID()}.webp`,
+    });
+
+    const bookUrl = await StorageService.uploadEpub(bookBuffer, {
+      fileName: `${crypto.randomUUID()}.epub`,
+    });
+
+    const bookData = {
+      ownerId,
+      title: metadata.title,
+      author: metadata.author,
+      description: metadata.description,
+      language: metadata.language,
+      publisher: metadata.publisher,
+      tableOfContents: toc,
+      coverUrl,
+      url: bookUrl,
+      fileSize: fileSizeInBytes,
+      filename: originalName,
+      fileHash,
+    };
+
     return db.transaction(async (tx) => {
       const [book] = await tx
         .insert(books)
-        .values({ ...data, ownerId: userId })
+        .values({ ...bookData })
         .returning(publicColumns);
       await tx.insert(userBooks).values({
-        userId: userId,
+        userId: ownerId,
         bookId: book.id,
-        lastPosition: 0, 
+        lastPosition: 0,
       });
       return book;
     });

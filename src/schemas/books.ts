@@ -1,5 +1,10 @@
 import * as z from "zod";
 
+const tocItemSchema = z.object({
+  title: z.string(),
+  href: z.string(),
+});
+
 export const BookSchema = z.object({
   id: z.uuid(),
   url: z.string(),
@@ -9,7 +14,7 @@ export const BookSchema = z.object({
   language: z.string().nullable().optional(),
   publisher: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
-  tableOfContents: z.array(z.string()).nullable().optional(),
+  tableOfContents: z.array(tocItemSchema),
   fileSize: z.int(),
   filename: z.string(),
   ownerId: z.uuid(),
@@ -26,7 +31,7 @@ const CreateBookSchema = z.object({
   language: z.string().nullable().optional(),
   publisher: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
-  tableOfContents: z.array(z.string()).nullable().optional(),
+  tableOfContents: z.array(tocItemSchema),
   fileSize: z.int(),
   filename: z.string(),
   ownerId: z.uuid(),

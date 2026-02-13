@@ -1,7 +1,7 @@
 import * as JSZip from "jszip";
 import { parseStringPromise, processors } from "xml2js";
 
-type EpubMetadata = {
+export type EpubMetadata = {
   title: string;
   author: string;
   language: string;

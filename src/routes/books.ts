@@ -2,20 +2,17 @@ import { Hono } from "hono";
 
 import { validateUUID } from "@/schemas/id";
 import { BooksController } from "@/controllers/books";
-import { validatePartialBook } from "@/schemas/books";
+import { validateUploadEpub } from "@/schemas/upload-epub";
 
-import { validateBody, validateParam } from "@/middlewares/zod-validators";
+import { validateEPUB, validateParam } from "@/middlewares/zod-validators";
 import { authMiddleware, requireAdmin } from "@/middlewares/auth";
 
 export const books = new Hono();
 
-books.post("/test", authMiddleware, requireAdmin, BooksController.TestUpload);
-
-//TODO: full flow of creation, validations, extraction, everything
 books.post(
   "/",
   authMiddleware,
-  validateBody(validatePartialBook),
+  validateEPUB(validateUploadEpub),
   BooksController.createBook,
 );
 

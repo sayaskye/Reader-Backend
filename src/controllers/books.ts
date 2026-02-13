@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 
 import { EpubService } from "@/services/epub";
-import { BooksService } from "@/services/books";
+import { BooksService, Toc } from "@/services/books";
 import { validators } from "@/middlewares/zod-validators";
 
 export class BooksController {
@@ -10,7 +10,8 @@ export class BooksController {
     const file = body.file as File;
     if (!file) return c.json({ error: "Didn't upload any file" }, 400);
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { metadata, coverBuffer, mimeType, version, toc } = await EpubService.extractData(buffer);
+    const { metadata, coverBuffer, mimeType, version, toc } =
+      await EpubService.extractData(buffer);
     if (!metadata)
       return c.json({ error: "Couldn't get metadata from the file" }, 404);
     if (!coverBuffer || !mimeType)
@@ -22,7 +23,7 @@ export class BooksController {
       version,
       toc,
       hasCover: !!coverBuffer,
-      mimeType
+      mimeType,
     });
     /* return new Response(new Uint8Array(coverBuffer), {
       headers: {
@@ -63,33 +64,37 @@ export class BooksController {
   }
   static async createBook(c: Context) {
     const ownerId = c.get(validators.VALIDATED_ID);
-    const body = c.get(validators.VALIDATED_BODY);
-    //TODO: validate with zod the file
-    //TODO: insert in body urls
-    /* const body = await c.req.parseBody();
-    const file = body.file as File;
-    if (!file) return c.json({ error: "Didn't upload any file" }, 400);
+    const epub = c.get(validators.VALIDATED_EPUB);
+    if (!epub) return c.json({ error: "Couldn't validate the epub file" }, 404);
+    const file = epub.file;
+    const originalName = file.name;
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { metadata, coverBuffer, mimeType, version, toc } = await EpubService.extractData(buffer);
-    if (!metadata)
-      return c.json({ error: "Couldn't get metadata from the file" }, 404);
-    if (!coverBuffer || !mimeType)
-      return c.json({ error: "Couldn't get cover from the file" }, 404);
-
-    const coverUrl = await StorageService.uploadImage(coverBuffer, {
-      fileName: `${crypto.randomUUID()}.jpg`,
-      contentType: mimeType
-    });
-
-    const bookUrl = await StorageService.uploadEpub(buffer, {
-      fileName: `${crypto.randomUUID()}.epub`
-    }); 
-    */
-    const book = await BooksService.create(body, ownerId);
-    if (book) {
+    const { metadata, coverBuffer, toc } =
+      await EpubService.extractData(buffer);
+    if (!metadata || !coverBuffer)
+      return c.json({ error: "Couldn't get epub file metadata or cover" }, 422);
+    /*return c.json({
+        bookBuffer: !!buffer,
+        coverBuffer: !!coverBuffer,
+        metadata,
+        toc: toc as Toc,
+        originalName,
+        ownerId,
+      }, 200)*/
+    try {
+      const book = await BooksService.create({
+        bookBuffer: buffer,
+        coverBuffer,
+        metadata,
+        toc: toc as Toc,
+        originalName,
+        ownerId,
+      });
       return c.json(book, 201);
+    } catch (error) {
+      console.error(error);
+      return c.json({ error: "Error while saving the file" }, 500);
     }
-    return c.json({ error: "Couldn't create this book" }, 404);
   }
   static async getMyBooks(c: Context) {
     const ownerId = c.get(validators.VALIDATED_ID);
