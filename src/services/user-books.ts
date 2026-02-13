@@ -3,13 +3,21 @@ import { userBooks } from "@/db/schema/user-books";
 import { and, eq } from "drizzle-orm";
 
 export class UserBooksService {
-  static async remove(userId: string, bookId: string) {
-    const result = await db
-      .delete(userBooks)
-      .where(and(eq(userBooks.userId, userId), eq(userBooks.bookId, bookId)))
-      .returning({ id: userBooks.id });
+  static async getMyBooks(userId: string) {
+    const results = await db.query.userBooks.findMany({
+      where: (ub, { eq }) => eq(ub.userId, userId),
+      with: {
+        book: {
+          columns: {
+            deletedAt: false,
+            uploadedAt: false,
+          },
+        },
+      },
+      orderBy: (ub, { desc }) => desc(ub.dateAddedAt),
+    });
 
-    return result.length > 0;
+    return results;
   }
 
   static async getByBookId(userId: string, bookId: string) {
@@ -22,36 +30,18 @@ export class UserBooksService {
     });
   }
 
-  static async updateProgress(
+  static async update(
+    userBookId: string,
     userId: string,
-    bookId: string,
-    lastPosition: number,
+    data: Partial<typeof userBooks.$inferInsert>,
   ) {
     const [updated] = await db
       .update(userBooks)
       .set({
-        lastPosition,
-        lastReadAt: new Date(),
+        ...data,
         updatedAt: new Date(),
       })
-      .where(and(eq(userBooks.userId, userId), eq(userBooks.bookId, bookId)))
-      .returning();
-
-    return updated ?? null;
-  }
-
-  static async updateStatus(
-    userId: string,
-    bookId: string,
-    status: typeof userBooks.$inferInsert.status,
-  ) {
-    const [updated] = await db
-      .update(userBooks)
-      .set({
-        status,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(userBooks.userId, userId), eq(userBooks.bookId, bookId)))
+      .where(and(eq(userBooks.id, userBookId), eq(userBooks.userId, userId)))
       .returning();
 
     return updated ?? null;
@@ -75,5 +65,13 @@ export class UserBooksService {
       .returning();
 
     return updated;
+  }
+  static async remove(userId: string, bookId: string) {
+    const result = await db
+      .delete(userBooks)
+      .where(and(eq(userBooks.userId, userId), eq(userBooks.bookId, bookId)))
+      .returning({ id: userBooks.id });
+
+    return result.length > 0;
   }
 }

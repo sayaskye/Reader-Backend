@@ -6,6 +6,7 @@ import { users } from "@/routes/users";
 import { books } from "@/routes/books";
 import { roles } from "@/routes/roles";
 import { userRoles } from "@/routes/user-roles";
+import { userBooks } from "@/routes/user-books";
 import { health } from "@/routes/health";
 
 import { errors } from "@/middlewares/errors";
@@ -22,6 +23,7 @@ app.route("/books", books);
 app.route("/auth", auth);
 app.route("/roles", roles);
 app.route("/user-roles", userRoles);
+app.route("/user-books", userBooks);
 
 export default {
   port: process.env.PORT ?? 3000,

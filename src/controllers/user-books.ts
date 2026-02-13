@@ -3,7 +3,52 @@ import { UserBooksService } from "@/services/user-books";
 import { validators } from "@/middlewares/zod-validators";
 
 export class UserBooksController {
-  static async internalDeleteBookById(c: Context, userId: string, bookId: string){
+  static async getMyBooks(c: Context) {
+    const userId = c.get(validators.VALIDATED_ID);
+
+    const books = await UserBooksService.getMyBooks(userId);
+
+    return c.json(books, 200);
+  }
+  static async getUserBook(c: Context) {
+    const userId = c.get(validators.VALIDATED_ID);
+    const bookId = c.req.param("id");
+
+    const result = await UserBooksService.getByBookId(userId, bookId);
+
+    if (!result) return c.json({ error: "Not found" }, 404);
+
+    return c.json(result);
+  }
+  static async update(c: Context) {
+    const userId = c.get(validators.VALIDATED_ID);
+    const params = c.get(validators.VALIDATED_PARAMS)
+    const body = await c.req.json();//TODO: VALIDATE
+    const data = {...body, lastReadAt: new Date()}
+
+    const updated = await UserBooksService.update(params.id, userId, data);
+
+    if (!updated) {
+      return c.json({ message: "User book not found" }, 404);
+    }
+
+    return c.json(updated, 200);
+  }
+  static async toggleFavorite(c: Context) {
+    const userId = c.get(validators.VALIDATED_ID);
+    const bookId = c.req.param("id");
+
+    const updated = await UserBooksService.toggleFavorite(userId, bookId);
+
+    if (!updated) return c.json({ error: "Not found" }, 404);
+
+    return c.json(updated);
+  }
+  static async internalDeleteBookById(
+    c: Context,
+    userId: string,
+    bookId: string,
+  ) {
     const deleted = await UserBooksService.remove(userId, bookId);
 
     if (!deleted) {
@@ -15,65 +60,14 @@ export class UserBooksController {
   static async deleteMyBookById(c: Context) {
     const userId = c.get(validators.VALIDATED_ID);
     const params = c.get(validators.VALIDATED_PARAMS);
-    return UserBooksController.internalDeleteBookById(c, userId, params.id)
+    return UserBooksController.internalDeleteBookById(c, userId, params.id);
   }
-
   static async deleteUserBookById(c: Context) {
     const params = c.get(validators.VALIDATED_PARAMS);
-    return UserBooksController.internalDeleteBookById(c, params.userId, params.bookId)
-  }
-
-  static async getUserBook(c: Context) {
-    const userId = c.get(validators.VALIDATED_ID);
-    const bookId = c.req.param("id");
-
-    const result = await UserBooksService.getByBookId(userId, bookId);
-
-    if (!result) return c.json({ error: "Not found" }, 404);
-
-    return c.json(result);
-  }
-
-  static async updateProgress(c: Context) {
-    const userId = c.get(validators.VALIDATED_ID);
-    const bookId = c.req.param("id");
-    const { lastPosition } = await c.req.json();
-
-    const updated = await UserBooksService.updateProgress(
-      userId,
-      bookId,
-      lastPosition
+    return UserBooksController.internalDeleteBookById(
+      c,
+      params.userId,
+      params.bookId,
     );
-
-    if (!updated) return c.json({ error: "Not found" }, 404);
-
-    return c.json(updated);
-  }
-
-  static async updateStatus(c: Context) {
-    const userId = c.get(validators.VALIDATED_ID);
-    const bookId = c.req.param("id");
-    const { status } = await c.req.json();
-
-    const updated = await UserBooksService.updateStatus(
-      userId,
-      bookId,
-      status
-    );
-
-    if (!updated) return c.json({ error: "Not found" }, 404);
-
-    return c.json(updated);
-  }
-
-  static async toggleFavorite(c: Context) {
-    const userId = c.get(validators.VALIDATED_ID);
-    const bookId = c.req.param("id");
-
-    const updated = await UserBooksService.toggleFavorite(userId, bookId);
-
-    if (!updated) return c.json({ error: "Not found" }, 404);
-
-    return c.json(updated);
   }
 }
