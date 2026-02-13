@@ -10,12 +10,17 @@ import { userBooks } from "@/routes/user-books";
 import { health } from "@/routes/health";
 
 import { errors } from "@/middlewares/errors";
+import { apiLimiter, authLimiter, uploadLimiter } from "@/middlewares/rate-limit";
 
 const app = new Hono().basePath("/api/");
 
 app.use(logger());
 
 app.onError(errors);
+
+app.use("/auth/*", authLimiter);
+app.use("/books", uploadLimiter);
+app.use("/*", apiLimiter);
 
 app.route("/health", health);
 app.route("/users", users);
