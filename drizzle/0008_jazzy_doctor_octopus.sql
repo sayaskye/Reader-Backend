@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "books_hash_unique" ON "books" USING btree ("file_hash");
