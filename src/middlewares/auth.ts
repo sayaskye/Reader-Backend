@@ -21,7 +21,6 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 }
 
-
 export async function requireAdmin(c: Context, next: Next) {
   const roles = c.get("roles") as string[];
 
