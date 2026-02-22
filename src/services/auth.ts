@@ -51,7 +51,7 @@ export class AuthService {
       const accessToken = await createJWT(user.id, user.roles);
       const { refreshToken, jti } = await createRefreshToken(user.id);
 
-      const refreshTokenHash = hashToken(refreshToken);
+      const refreshTokenHash = await hashToken(refreshToken);
 
       const insert = await db.insert(refreshTokens).values({
         id: jti,
@@ -76,7 +76,7 @@ export class AuthService {
       const { payload } = await verify(refreshToken);
       if (payload.type !== "refresh") return messages.invalid;
 
-      const tokenHash = hashToken(refreshToken);
+      const tokenHash = await hashToken(refreshToken);
 
       return await db.transaction(async (tx) => {
         const stored = await tx.query.refreshTokens.findFirst({
@@ -110,7 +110,7 @@ export class AuthService {
           stored.userId,
         );
 
-        const newHash = hashToken(newRefresh);
+        const newHash = await hashToken(newRefresh);
 
         await tx.insert(refreshTokens).values({
           id: jti,
