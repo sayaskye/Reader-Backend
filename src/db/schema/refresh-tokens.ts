@@ -1,10 +1,5 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  timestamp,
-  boolean,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { users } from "@/db/schema/users";
 
 export const refreshTokens = pgTable("refresh_tokens", {
@@ -21,3 +16,9 @@ export const refreshTokens = pgTable("refresh_tokens", {
     .notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshTokens.userId],
+    references: [users.id],
+  }),
+}));
