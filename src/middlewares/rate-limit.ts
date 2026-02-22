@@ -5,7 +5,7 @@ import { validators } from "@/middlewares/zod-validators";
 
 export const authLimiter = rateLimiter({
   windowMs: 60 * 1000,
-  limit: 5,
+  limit: 50,
   handler: (c) =>
     c.json({ error: "Upload limit reached. Try again in 1 minute." }, 429),
   keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "anon",

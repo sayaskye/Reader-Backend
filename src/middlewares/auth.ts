@@ -30,3 +30,11 @@ export async function requireAdmin(c: Context, next: Next) {
 
   await next();
 }
+
+export async function refreshAuthMiddleware(c: Context, next: Next) {
+  const refreshToken = getCookie(c, "refresh_token");
+  if (!refreshToken) return c.text("Refresh Token Missing", 401);
+  const isValid = await verify(refreshToken);
+  if (isValid) await next();
+  return c.text("Invalid or Expired Refresh Token", 401);
+}
