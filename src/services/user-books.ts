@@ -3,8 +3,11 @@ import { userBooks } from "@/db/schema/user-books";
 import { and, eq } from "drizzle-orm";
 
 export class UserBooksService {
-  static async getMyBooks(userId: string) {
+  static async getMyBooks(userId: string, page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
     const results = await db.query.userBooks.findMany({
+      limit,
+      offset,
       where: (ub, { eq }) => eq(ub.userId, userId),
       with: {
         book: {
@@ -14,7 +17,11 @@ export class UserBooksService {
           },
         },
       },
-      orderBy: (ub, { asc, desc }) => [asc(ub.lastReadAt), asc(ub.updatedAt), desc(ub.dateAddedAt)],
+      orderBy: (ub, { asc, desc }) => [
+        asc(ub.lastReadAt),
+        asc(ub.updatedAt),
+        desc(ub.dateAddedAt),
+      ],
     });
 
     return results;
@@ -50,7 +57,7 @@ export class UserBooksService {
     return updated ?? null;
   }
 
-  static async toggleFavorite(userId: string, bookId: string) {    
+  static async toggleFavorite(userId: string, bookId: string) {
     const existing = await db.query.userBooks.findFirst({
       where: (ub, { eq, and }) =>
         and(eq(ub.userId, userId), eq(ub.bookId, bookId)),

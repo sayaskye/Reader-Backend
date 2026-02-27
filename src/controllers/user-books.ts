@@ -4,11 +4,22 @@ import { validators } from "@/middlewares/zod-validators";
 
 export class UserBooksController {
   static async getMyBooks(c: Context) {
+    const page = Number(c.req.query("page") ?? 1);
+    const limit = Number(c.req.query("limit") ?? 10);
     const userId = c.get(validators.VALIDATED_ID);
 
-    const books = await UserBooksService.getMyBooks(userId);
-
-    return c.json(books, 200);
+    const books = await UserBooksService.getMyBooks(userId, page, limit);
+    if (books) {
+      return c.json(
+        {
+          page,
+          limit,
+          data: books,
+        },
+        200,
+      );
+    }
+    return c.json({ error: "Couldn't find books" }, 404);
   }
   static async getUserBook(c: Context) {
     const userId = c.get(validators.VALIDATED_ID);
@@ -22,11 +33,11 @@ export class UserBooksController {
   }
   static async update(c: Context) {
     const userId = c.get(validators.VALIDATED_ID);
-    const params = c.get(validators.VALIDATED_PARAMS)
+    const params = c.get(validators.VALIDATED_PARAMS);
     const body = await c.get(validators.VALIDATED_BODY);
-    const data = { 
-      ...body, 
-      lastReadAt: body.lastReadAt ?? new Date() 
+    const data = {
+      ...body,
+      lastReadAt: body.lastReadAt ?? new Date(),
     };
     const updated = await UserBooksService.update(params.id, userId, data);
     if (!updated) {
@@ -37,7 +48,7 @@ export class UserBooksController {
   static async toggleFavorite(c: Context) {
     const userId = c.get(validators.VALIDATED_ID);
     const params = c.get(validators.VALIDATED_PARAMS);
-    const bookId = params.bookId
+    const bookId = params.bookId;
     console.log("USERID:", userId, "BookID:", bookId);
 
     const updated = await UserBooksService.toggleFavorite(userId, bookId);
