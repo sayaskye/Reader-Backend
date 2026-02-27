@@ -14,7 +14,7 @@ export class UserBooksService {
           },
         },
       },
-      orderBy: (ub, { asc, desc }) => [asc(ub.lastReadAt), desc(ub.dateAddedAt)],
+      orderBy: (ub, { asc, desc }) => [asc(ub.lastReadAt), asc(ub.updatedAt), desc(ub.dateAddedAt)],
     });
 
     return results;
@@ -50,7 +50,7 @@ export class UserBooksService {
     return updated ?? null;
   }
 
-  static async toggleFavorite(userId: string, bookId: string) {
+  static async toggleFavorite(userId: string, bookId: string) {    
     const existing = await db.query.userBooks.findFirst({
       where: (ub, { eq, and }) =>
         and(eq(ub.userId, userId), eq(ub.bookId, bookId)),

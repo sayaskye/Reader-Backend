@@ -36,7 +36,9 @@ export class UserBooksController {
   }
   static async toggleFavorite(c: Context) {
     const userId = c.get(validators.VALIDATED_ID);
-    const bookId = c.req.param("id");
+    const params = c.get(validators.VALIDATED_PARAMS);
+    const bookId = params.bookId
+    console.log("USERID:", userId, "BookID:", bookId);
 
     const updated = await UserBooksService.toggleFavorite(userId, bookId);
 

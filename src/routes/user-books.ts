@@ -17,3 +17,9 @@ userBooks.patch(
   validateParam(validateUUID, "id"),
   UserBooksController.update,
 );
+userBooks.patch(
+  "/favorite/:bookId",
+  authMiddleware,
+  validateParam(validateUUID, "bookId"),
+  UserBooksController.toggleFavorite,
+);
