@@ -37,7 +37,6 @@ export const users = pgTable(
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
   roles: many(userRoles),
-  books: many(books),
   userBooks: many(userBooks),
   sharedWith: many(sharedBooks, { relationName: "sharedWith" }),
   sharedBy: many(sharedBooks, { relationName: "sharedBy" }),
