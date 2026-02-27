@@ -14,7 +14,7 @@ export class UserBooksService {
           },
         },
       },
-      orderBy: (ub, { desc }) => desc(ub.dateAddedAt),
+      orderBy: (ub, { asc, desc }) => [asc(ub.lastReadAt), desc(ub.dateAddedAt)],
     });
 
     return results;
