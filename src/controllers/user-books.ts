@@ -8,17 +8,20 @@ export class UserBooksController {
     const limit = Number(c.req.query("limit") ?? 10);
     const userId = c.get(validators.VALIDATED_ID);
 
-    const books = await UserBooksService.getMyBooks(userId, page, limit);
-    if (books) {
+    const result = await UserBooksService.getMyBooks(userId, page, limit);
+    if (result.books) {
       return c.json(
         {
           page,
           limit,
-          data: books,
+          totalCount: result.totalCount,
+          hasNextPage: result.hasNextPage,
+          data: result.books,
         },
         200,
       );
     }
+
     return c.json({ error: "Couldn't find books" }, 404);
   }
   static async getUserBook(c: Context) {

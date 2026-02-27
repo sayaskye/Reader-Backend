@@ -1,30 +1,43 @@
 import { db } from "@/db/client";
 import { userBooks } from "@/db/schema/user-books";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 export class UserBooksService {
   static async getMyBooks(userId: string, page = 1, limit = 10) {
     const offset = (page - 1) * limit;
-    const results = await db.query.userBooks.findMany({
-      limit,
-      offset,
-      where: (ub, { eq }) => eq(ub.userId, userId),
-      with: {
-        book: {
-          columns: {
-            deletedAt: false,
-            uploadedAt: false,
+    const [results, totalCountResult] = await Promise.all([
+      db.query.userBooks.findMany({
+        limit,
+        offset,
+        where: (ub, { eq }) => eq(ub.userId, userId),
+        with: {
+          book: {
+            columns: {
+              deletedAt: false,
+              uploadedAt: false,
+            },
           },
         },
-      },
-      orderBy: (ub, { asc, desc }) => [
-        asc(ub.lastReadAt),
-        asc(ub.updatedAt),
-        desc(ub.dateAddedAt),
-      ],
-    });
+        orderBy: (ub, { asc, desc }) => [
+          asc(ub.lastReadAt),
+          asc(ub.updatedAt),
+          desc(ub.dateAddedAt),
+        ],
+      }),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(userBooks)
+        .where(eq(userBooks.userId, userId)),
+    ]);
 
-    return results;
+    const totalCount = Number(totalCountResult[0].count);
+    const hasNextPage = page * limit < totalCount;
+
+    return {
+      books: results,
+      totalCount,
+      hasNextPage,
+    };
   }
 
   static async getByBookId(userId: string, bookId: string) {
