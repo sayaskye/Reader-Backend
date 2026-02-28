@@ -2,13 +2,26 @@ import { Context } from "hono";
 import { UserBooksService } from "@/services/user-books";
 import { validators } from "@/middlewares/zod-validators";
 
+type ReadingStatus = "to-read" | "reading" | "completed" | "on-hold";
 export class UserBooksController {
   static async getMyBooks(c: Context) {
+    const userId = c.get(validators.VALIDATED_ID);
     const page = Number(c.req.query("page") ?? 1);
     const limit = Number(c.req.query("limit") ?? 10);
-    const userId = c.get(validators.VALIDATED_ID);
+    const search = c.req.query("search");
+    const isFavorite = c.req.query("isFavorite") === "true";
+    const statusRaw = c.req.query("status");
+    const status =
+      statusRaw && statusRaw !== "all"
+        ? (statusRaw as ReadingStatus)
+        : undefined;
 
-    const result = await UserBooksService.getMyBooks(userId, page, limit);
+    const result = await UserBooksService.getMyBooks(userId, page, limit, {
+      search,
+      isFavorite,
+      status,
+    });
+
     if (result.books) {
       return c.json(
         {

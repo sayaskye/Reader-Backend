@@ -1,40 +1,77 @@
 import { db } from "@/db/client";
-import { userBooks } from "@/db/schema/user-books";
-import { and, eq, sql } from "drizzle-orm";
+import { userBooks, readingStatusEnum } from "@/db/schema/user-books";
+import { books } from "@/db/schema/books";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 
+type ReadingStatus = (typeof readingStatusEnum.enumValues)[number];
+interface FilterParams {
+  search?: string;
+  status?: ReadingStatus;
+  isFavorite?: boolean;
+}
 export class UserBooksService {
-  static async getMyBooks(userId: string, page = 1, limit = 10) {
+  static async getMyBooks(
+    userId: string,
+    page = 1,
+    limit = 10,
+    filters: FilterParams = {},
+  ) {
     const offset = (page - 1) * limit;
+
+    const conditions = [eq(userBooks.userId, userId)];
+    if (filters.isFavorite) {
+      conditions.push(eq(userBooks.isFavorite, true));
+    }
+    if (filters.status) {
+      conditions.push(eq(userBooks.status, filters.status));
+    }
+
+    if (filters.search) {
+      const searchPattern = `%${filters.search}%`;
+      conditions.push(
+        or(
+          ilike(books.title, searchPattern),
+          ilike(books.author, searchPattern),
+          ilike(books.publisher, searchPattern),
+        )!,
+      );
+    }
+
+    const finalWhere = and(...conditions);
+
     const [results, totalCountResult] = await Promise.all([
-      db.query.userBooks.findMany({
-        limit,
-        offset,
-        where: (ub, { eq }) => eq(ub.userId, userId),
-        with: {
-          book: {
-            columns: {
-              deletedAt: false,
-              uploadedAt: false,
-            },
-          },
-        },
-        orderBy: (ub, { asc, desc }) => [
-          asc(ub.lastReadAt),
-          asc(ub.updatedAt),
-          desc(ub.dateAddedAt),
-        ],
-      }),
+      db
+        .select({
+          userBook: userBooks,
+          book: books,
+        })
+        .from(userBooks)
+        .innerJoin(books, eq(userBooks.bookId, books.id))
+        .where(finalWhere)
+        .limit(limit)
+        .offset(offset)
+        .orderBy(
+          asc(userBooks.lastReadAt),
+          asc(userBooks.updatedAt),
+          desc(userBooks.dateAddedAt),
+        ),
       db
         .select({ count: sql<number>`count(*)` })
         .from(userBooks)
-        .where(eq(userBooks.userId, userId)),
+        .innerJoin(books, eq(userBooks.bookId, books.id))
+        .where(finalWhere),
     ]);
+
+    const formattedBooks = results.map(({ userBook, book }) => ({
+      ...userBook,
+      book,
+    }));
 
     const totalCount = Number(totalCountResult[0].count);
     const hasNextPage = page * limit < totalCount;
 
     return {
-      books: results,
+      books: formattedBooks,
       totalCount,
       hasNextPage,
     };
