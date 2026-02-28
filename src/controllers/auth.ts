@@ -5,13 +5,28 @@ import { UsersService } from "@/services/users";
 import { AuthService, messages } from "@/services/auth";
 
 import { validators } from "@/middlewares/zod-validators";
-import { clearAuthCookie, setAuthCookie, tokenTypes } from "@/utils/auth-cookies";
+import {
+  clearAuthCookie,
+  setAuthCookie,
+  tokenTypes,
+} from "@/utils/auth-cookies";
 import { hashPassword } from "@/utils/argon";
 
 export class AuthController {
+  static async validate(c: Context) {
+    const userId = c.get(validators.VALIDATED_ID);
+    const roles = c.get("roles");
+    return c.json({
+      authenticated: true,
+      user: {
+        id: userId,
+        roles: roles
+      }
+    }, 200);
+  }
   static async register(c: Context) {
     const body = c.get(validators.VALIDATED_BODY);
-    const passwordHash = await hashPassword(body.password)
+    const passwordHash = await hashPassword(body.password);
     const user = await UsersService.create(body, passwordHash);
     if (user) {
       return c.json(user, 201);
@@ -24,8 +39,13 @@ export class AuthController {
     if (body) {
       const result = await AuthService.login(body);
       if (typeof result === "object") {
-        setAuthCookie(c,tokenTypes.access, result.accessToken, 60 * 60 * 24)
-        setAuthCookie(c,tokenTypes.refresh, result.refreshToken, 60 * 60 * 24 * 30)
+        setAuthCookie(c, tokenTypes.access, result.accessToken, 60 * 60 * 24);
+        setAuthCookie(
+          c,
+          tokenTypes.refresh,
+          result.refreshToken,
+          60 * 60 * 24 * 30,
+        );
         return c.json({ success: true }, 200);
       }
       if (result === messages.invalid || result === messages.unknown) {
@@ -41,8 +61,13 @@ export class AuthController {
 
     const result = await AuthService.refresh(refreshToken);
     if (typeof result === "object") {
-      setAuthCookie(c,tokenTypes.access, result.accessToken, 60 * 60 * 24)
-      setAuthCookie(c,tokenTypes.refresh, result.refreshToken, 60 * 60 * 24 * 30)
+      setAuthCookie(c, tokenTypes.access, result.accessToken, 60 * 60 * 24);
+      setAuthCookie(
+        c,
+        tokenTypes.refresh,
+        result.refreshToken,
+        60 * 60 * 24 * 30,
+      );
       return c.json({ success: true }, 200);
     }
     return c.text("Unauthorized", 401);
@@ -55,8 +80,8 @@ export class AuthController {
       await AuthService.logout(refreshToken);
     }
 
-    clearAuthCookie(c,tokenTypes.access)
-    clearAuthCookie(c,tokenTypes.refresh)
+    clearAuthCookie(c, tokenTypes.access);
+    clearAuthCookie(c, tokenTypes.refresh);
 
     return c.json({ success: true });
   }

@@ -4,10 +4,11 @@ import { AuthController } from "@/controllers/auth";
 
 import { validateLogin, validateRegister } from "@/schemas/auth";
 import { validateBody } from "@/middlewares/zod-validators";
-import { refreshAuthMiddleware } from "@/middlewares/auth";
+import { authMiddleware, refreshAuthMiddleware } from "@/middlewares/auth";
 
 export const auth = new Hono();
 
+auth.get("/validate", authMiddleware, AuthController.validate);
 auth.post("/register", validateBody(validateRegister), AuthController.register);
 auth.post("/login", validateBody(validateLogin), AuthController.login);
 auth.post("/refresh", refreshAuthMiddleware, AuthController.refresh);
