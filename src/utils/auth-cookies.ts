@@ -14,7 +14,7 @@ export const setAuthCookie = (
   setCookie(c, type, token, {
     httpOnly: true,
     maxAge,
-    sameSite: "strict",
+    sameSite: "None",
     secure: true,
     path: "/",
   });
@@ -27,7 +27,7 @@ export const clearAuthCookie = (
   setCookie(c, type, "", {
     httpOnly: true,
     maxAge: 0,
-    sameSite: "strict",
+    sameSite: "None",
     secure: true,
     path: "/",
   });
