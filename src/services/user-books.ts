@@ -92,6 +92,12 @@ export class UserBooksService {
     userId: string,
     data: Partial<typeof userBooks.$inferInsert>,
   ) {
+    if (data.lastReadAt && typeof data.lastReadAt === "string") {
+      data.lastReadAt = new Date(data.lastReadAt);
+    }
+    if (data.finishedAt && typeof data.finishedAt === "string") {
+      data.finishedAt = new Date(data.finishedAt);
+    }
     if (data.status === "completed" && !data.finishedAt) {
       data.finishedAt = new Date();
     }
