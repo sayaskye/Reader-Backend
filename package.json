@@ -2,7 +2,8 @@
   "name": "reader",
   "scripts": {
     "start": "bun run src/index.ts",
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "build": "echo 'No build step needed for Bun'"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.95.3",
