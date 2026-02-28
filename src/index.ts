@@ -18,7 +18,10 @@ const app = new Hono().basePath("/api/");
 app.use(
   "*",
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173", 
+      "https://saya-reader.netlify.app"
+    ],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
