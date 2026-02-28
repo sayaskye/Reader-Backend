@@ -51,9 +51,9 @@ export class UserBooksService {
         .limit(limit)
         .offset(offset)
         .orderBy(
-          asc(userBooks.lastReadAt),
-          asc(userBooks.updatedAt),
-          desc(userBooks.dateAddedAt),
+          sql`${userBooks.lastReadAt} DESC NULLS LAST`,
+          sql`${userBooks.updatedAt} DESC NULLS LAST`,
+          sql`${userBooks.dateAddedAt} DESC NULLS LAST`
         ),
       db
         .select({ count: sql<number>`count(*)` })
