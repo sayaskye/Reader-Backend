@@ -34,11 +34,14 @@ export class EpubService {
       ?.async("string");
     if (!containerXml) throw new Error("Invalid EPUB: Missing container.xml");
 
-    const containerJson = await parseStringPromise(containerXml);
+    // prevents the parser from failing when it encounters schemas or prefixes.
+    const containerJson = await parseStringPromise(containerXml, {
+      tagNameProcessors: [processors.stripPrefix],
+    });
     const opfPath: string =
       containerJson.container.rootfiles[0].rootfile[0].$["full-path"];
 
-    // 2. Parse the OPF file for manifest and metadata info
+    // 2. Parse the OPF file to get manifest and metadata
     const opfXml = await zip.file(opfPath)?.async("string");
     if (!opfXml) throw new Error("Invalid EPUB: Missing OPF file");
 
@@ -51,11 +54,12 @@ export class EpubService {
     const metadataNode = pkg.metadata;
     const version: string = pkg.$.version || "Unknown";
 
+    // Normalize manifest to always be an array
     const manifest: any[] = Array.isArray(pkg.manifest.item)
       ? pkg.manifest.item
       : [pkg.manifest.item];
 
-    // 3. Normalize Metadata (Fixing the [object Object] bug here)
+    // 3. Build the Metadata object
     const metadata: EpubMetadata = {
       title: metadataNode.title?._ || metadataNode.title || "Unknown title",
       author: this.normalizeAuthor(metadataNode.creator),
@@ -68,7 +72,7 @@ export class EpubService {
     // @ts-ignore //this zip is already a JSZip, just a bug with jsmodules import, sigh.
     const toc = await this.extractToc(zip, opfPath, manifest, version);
 
-    // 5. Handle Cover Image extraction
+    // 5. Handle Cover extraction
     const coverItem = this.findCoverItem(manifest);
     if (!coverItem) {
       return { metadata, version, toc, coverBuffer: null, mimeType: null };
@@ -78,7 +82,7 @@ export class EpubService {
     const coverFile = zip.file(coverPath);
 
     if (!coverFile) {
-      // Fallback search by filename if path resolution fails
+      // Emergency fallback: Search by filename if the path resolution fails
       const filename = coverItem.$.href.split("/").pop();
       const fallbackFile = Object.values(zip.files).find((f) =>
         f.name.endsWith(filename),
@@ -129,7 +133,7 @@ export class EpubService {
 
   /**
    * Identifies the TOC file and parses it using JSZip instance type.
-   * Note: zip parameter uses InstanceType<typeof JSZip> as requested.
+   * Note: zip parameter type is sketchy due to importation with ES modules.
    */
   private static async extractToc(
     zip: JSZip,
@@ -191,7 +195,7 @@ export class EpubService {
   }
 
   /**
-   * Fixes TOC hrefs to be relative to the OPF file, resolving nested folder issues.
+   * TOC hrefs to be relative to the OPF file, resolves nested folder.
    */
   private static normalizeTocHref(
     tocPath: string,

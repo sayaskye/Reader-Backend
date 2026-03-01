@@ -153,6 +153,9 @@ export class BooksService {
   }
 
   static async update(bookId: string, data: Partial<UpdateBook>) {
+    /* // For testing, remove when epub service gets really stable
+    console.log(data)
+    return data */
     const [book] = await db
       .update(books)
       .set({ ...data })
