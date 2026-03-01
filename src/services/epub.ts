@@ -16,6 +16,9 @@ type TocItem = {
 };
 
 export class EpubService {
+  /**
+   * Main method to extract all necessary data from an EPUB file buffer.
+   */
   static async extractData(fileBuffer: Buffer): Promise<{
     metadata: EpubMetadata;
     version: string;
@@ -25,7 +28,7 @@ export class EpubService {
   }> {
     const zip = await JSZip.loadAsync(fileBuffer);
 
-    // 1. Load and parse container.xml to locate the OPF file
+    // 1. Find the OPF file path via container.xml
     const containerXml = await zip
       .file("META-INF/container.xml")
       ?.async("string");
@@ -35,7 +38,7 @@ export class EpubService {
     const opfPath: string =
       containerJson.container.rootfiles[0].rootfile[0].$["full-path"];
 
-    // 2. Load and parse OPF with stripPrefix to handle namespaces (opf:, dc:)
+    // 2. Parse the OPF file for manifest and metadata info
     const opfXml = await zip.file(opfPath)?.async("string");
     if (!opfXml) throw new Error("Invalid EPUB: Missing OPF file");
 
@@ -46,29 +49,26 @@ export class EpubService {
 
     const pkg = opfJson.package;
     const metadataNode = pkg.metadata;
-
-    // Extract version
     const version: string = pkg.$.version || "Unknown";
 
-    // Normalize manifest items to always be an array
     const manifest: any[] = Array.isArray(pkg.manifest.item)
       ? pkg.manifest.item
       : [pkg.manifest.item];
 
-    // 3. Extract Metadata handling both object and string formats
+    // 3. Normalize Metadata (Fixing the [object Object] bug here)
     const metadata: EpubMetadata = {
       title: metadataNode.title?._ || metadataNode.title || "Unknown title",
-      author:
-        metadataNode.creator?._ || metadataNode.creator || "Unknown author",
+      author: this.normalizeAuthor(metadataNode.creator),
       language: metadataNode.language || "en",
       publisher: metadataNode.publisher || "",
       description: metadataNode.description || "",
     };
 
-    // 4. Extract Table of Contents (TOC)
+    // 4. Extract TOC with path normalization
+    // @ts-ignore //this zip is already a JSZip, just a bug with jsmodules import, sigh.
     const toc = await this.extractToc(zip, opfPath, manifest, version);
 
-    // 5. Find and extract cover image
+    // 5. Handle Cover Image extraction
     const coverItem = this.findCoverItem(manifest);
     if (!coverItem) {
       return { metadata, version, toc, coverBuffer: null, mimeType: null };
@@ -78,7 +78,7 @@ export class EpubService {
     const coverFile = zip.file(coverPath);
 
     if (!coverFile) {
-      // If direct resolve fails, try a desperate search by filename only
+      // Fallback search by filename if path resolution fails
       const filename = coverItem.$.href.split("/").pop();
       const fallbackFile = Object.values(zip.files).find((f) =>
         f.name.endsWith(filename),
@@ -98,13 +98,38 @@ export class EpubService {
     }
 
     const coverBuffer = Buffer.from(await coverFile.async("arraybuffer"));
-    const mimeType = coverItem.$["media-type"] ?? null;
-
-    return { metadata, version, toc, coverBuffer, mimeType };
+    return {
+      metadata,
+      version,
+      toc,
+      coverBuffer,
+      mimeType: coverItem.$["media-type"] ?? null,
+    };
   }
 
   /**
-   * Extracts the Table of Contents based on EPUB version.
+   * Normalizes the author field to prevent storing raw XML objects in the DB.
+   */
+  private static normalizeAuthor(creator: any): string {
+    if (!creator) return "Unknown author";
+
+    // Ensure we are working with an array
+    const creators = Array.isArray(creator) ? creator : [creator];
+
+    return creators
+      .map((c) => {
+        if (typeof c === "object") {
+          // Extract the text value (_) from xml2js object format
+          return c._ || c["$text"] || "Unknown";
+        }
+        return c; // It's already a string
+      })
+      .join(", ");
+  }
+
+  /**
+   * Identifies the TOC file and parses it using JSZip instance type.
+   * Note: zip parameter uses InstanceType<typeof JSZip> as requested.
    */
   private static async extractToc(
     zip: JSZip,
@@ -116,7 +141,6 @@ export class EpubService {
     let isNcx = false;
 
     if (version.startsWith("2")) {
-      // EPUB 2: Find NCX file (application/x-dtbncx+xml)
       const ncxItem = manifest.find(
         (i) => i.$["media-type"] === "application/x-dtbncx+xml",
       );
@@ -124,125 +148,123 @@ export class EpubService {
       tocPath = this.resolveZipPath(opfPath, ncxItem.$.href);
       isNcx = true;
     } else if (version.startsWith("3")) {
-      // EPUB 3: Find item with properties="nav"
       const navItem = manifest.find((i) => i.$?.properties?.includes("nav"));
       if (!navItem) {
-        // Fallback to NCX if present for compatibility
         const ncxItem = manifest.find(
           (i) => i.$["media-type"] === "application/x-dtbncx+xml",
         );
         if (ncxItem) {
           tocPath = this.resolveZipPath(opfPath, ncxItem.$.href);
           isNcx = true;
-        } else {
-          return null;
-        }
+        } else return null;
       } else {
         tocPath = this.resolveZipPath(opfPath, navItem.$.href);
       }
-    } else {
-      return null;
-    }
+    } else return null;
 
     const tocXml = await zip.file(tocPath)?.async("string");
     if (!tocXml) return null;
 
     if (isNcx) {
-      // Parse NCX (EPUB 2)
       const ncxJson = await parseStringPromise(tocXml, {
         tagNameProcessors: [processors.stripPrefix],
         explicitArray: false,
       });
-      const navMap = ncxJson.ncx.navMap;
-      return this.parseNcxNavPoints(navMap.navPoint);
+      return this.parseNcxNavPoints(
+        ncxJson.ncx.navMap.navPoint,
+        tocPath,
+        opfPath,
+      );
     } else {
-      // Parse XHTML Nav (EPUB 3)
       const navJson = await parseStringPromise(tocXml, {
         tagNameProcessors: [processors.stripPrefix],
         explicitArray: false,
       });
       const navs = navJson.html.body.nav;
-      let tocNav;
-      if (Array.isArray(navs)) {
-        tocNav = navs.find((n: any) => n.$?.["epub:type"] === "toc");
-      } else {
-        tocNav = navs;
-      }
+      const tocNav = Array.isArray(navs)
+        ? navs.find((n: any) => n.$?.["epub:type"] === "toc")
+        : navs;
       if (!tocNav || !tocNav.ol) return null;
-      return this.parseNavOl(tocNav.ol);
+      return this.parseNavOl(tocNav.ol, tocPath, opfPath);
     }
   }
 
   /**
-   * Recursively parses NCX navPoints.
+   * Fixes TOC hrefs to be relative to the OPF file, resolving nested folder issues.
    */
-  private static parseNcxNavPoints(navPoints: any): TocItem[] {
+  private static normalizeTocHref(
+    tocPath: string,
+    rawHref: string,
+    opfPath: string,
+  ): string {
+    if (!rawHref || rawHref.startsWith("http") || rawHref.startsWith("#"))
+      return rawHref;
+
+    const absolutePath = this.resolveZipPath(tocPath, rawHref);
+    const opfDirParts = opfPath.split("/").slice(0, -1);
+    const opfDir = opfDirParts.join("/");
+
+    if (opfDir && absolutePath.startsWith(opfDir + "/")) {
+      return absolutePath.substring(opfDir.length + 1);
+    }
+    return absolutePath;
+  }
+
+  private static parseNcxNavPoints(
+    navPoints: any,
+    tocPath: string,
+    opfPath: string,
+  ): TocItem[] {
     if (!navPoints) return [];
     const points = Array.isArray(navPoints) ? navPoints : [navPoints];
     return points.map((point: any) => ({
       title: point.navLabel.text?._ || point.navLabel.text || "",
-      href: point.content.$.src || "",
-      children: this.parseNcxNavPoints(point.navPoint),
+      href: this.normalizeTocHref(tocPath, point.content.$.src || "", opfPath),
+      children: this.parseNcxNavPoints(point.navPoint, tocPath, opfPath),
     }));
   }
 
-  /**
-   * Recursively parses EPUB 3 <ol> <li> structure.
-   */
-  private static parseNavOl(ol: any): TocItem[] {
+  private static parseNavOl(
+    ol: any,
+    tocPath: string,
+    opfPath: string,
+  ): TocItem[] {
     if (!ol) return [];
     const lis = Array.isArray(ol.li) ? ol.li : [ol.li];
-    return lis.map((li: any) => {
-      const a = li.a;
-      return {
-        title: a?._ || a || "",
-        href: a?.$?.href || "",
-        children: li.ol ? this.parseNavOl(li.ol) : undefined,
-      };
-    });
+    return lis.map((li: any) => ({
+      title: li.a?._ || li.a || "",
+      href: this.normalizeTocHref(tocPath, li.a?.$?.href || "", opfPath),
+      children: li.ol ? this.parseNavOl(li.ol, tocPath, opfPath) : undefined,
+    }));
   }
 
-  /**
-   * Attempts to locate the cover image using EPUB conventions.
-   */
   private static findCoverItem(manifest: any[]): any | undefined {
-    // 1. EPUB 3 standard: properties="cover-image"
     let item = manifest.find((i) => i.$?.properties?.includes("cover-image"));
     if (item) return item;
 
-    // 2. Fallback: look for image items containing "cover" in id or href
     item = manifest.find((i) => {
       const id = i.$?.id?.toLowerCase() ?? "";
       const href = i.$?.href?.toLowerCase() ?? "";
       const mime = i.$?.["media-type"]?.toLowerCase() ?? "";
-
       return (
         mime.startsWith("image/") &&
         (id.includes("cover") || href.includes("cover"))
       );
     });
-    if (item) return item;
-
-    // 3. Last fallback: first available image
-    return manifest.find((i) => i.$?.["media-type"]?.startsWith("image/"));
+    return (
+      item || manifest.find((i) => i.$?.["media-type"]?.startsWith("image/"))
+    );
   }
 
-  /**
-   * Resolves a relative path inside the EPUB archive handling backtracking (../)
-   */
-  private static resolveZipPath(opfPath: string, href: string): string {
-    const basePath = opfPath.split("/").slice(0, -1);
+  private static resolveZipPath(originPath: string, href: string): string {
+    const basePath = originPath.split("/").slice(0, -1);
     const hrefParts = href.split("/");
     const finalPath = [...basePath];
 
     for (const part of hrefParts) {
-      if (part === "..") {
-        finalPath.pop();
-      } else if (part !== "." && part !== "") {
-        finalPath.push(part);
-      }
+      if (part === "..") finalPath.pop();
+      else if (part !== "." && part !== "") finalPath.push(part);
     }
-
     return finalPath.join("/");
   }
 }

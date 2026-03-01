@@ -4,7 +4,7 @@ import { db } from "@/db/client";
 import { books, userBooks } from "@/db/schema";
 
 import { StorageService } from "@/services/storage";
-import { Book } from "@/schemas/books";
+import { Book, UpdateBook } from "@/schemas/books";
 import { calculateEpubHash } from "@/utils/hash";
 import { EpubMetadata } from "@/services/epub";
 
@@ -152,20 +152,11 @@ export class BooksService {
     });
   }
 
-  static async update(id: string, data: Book) {
+  static async update(bookId: string, data: Partial<UpdateBook>) {
     const [book] = await db
       .update(books)
       .set({ ...data })
-      .where(eq(books.id, id))
-      .returning(publicColumns);
-    return book ?? null;
-  }
-
-  static async partialUpdate(id: string, data: Partial<Book>) {
-    const [book] = await db
-      .update(books)
-      .set({ ...data })
-      .where(eq(books.id, id))
+      .where(eq(books.id, bookId))
       .returning(publicColumns);
     return book ?? null;
   }

@@ -36,12 +36,31 @@ const CreateBookSchema = z.object({
   fileHash: z.string(),
 });
 
+const UpdateBookSchema = z.object({
+  url: z.string().optional(),
+  coverUrl: z.string().nullable().optional(),
+  title: z.string().optional(),
+  author: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  tableOfContents: z.array(tocItemSchema).optional(),
+  fileSize: z.int().optional(),
+  filename: z.string().optional(),
+  fileHash: z.string().optional(),
+});
+
+export type TocItem = z.infer<typeof tocItemSchema>;
 export type Book = z.infer<typeof BookSchema>;
 export type CreateBook = z.infer<typeof CreateBookSchema>;
+export type UpdateBook = z.infer<typeof UpdateBookSchema>;
 
 export const validateBook = (input: CreateBook) => {
   return CreateBookSchema.safeParse(input);
 };
 export const validatePartialBook = (input: CreateBook) => {
   return CreateBookSchema.partial().safeParse(input);
+};
+export const validatePartialUpdateBook = (input: UpdateBook) => {
+  return UpdateBookSchema.partial().safeParse(input);
 };

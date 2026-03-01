@@ -17,6 +17,14 @@ books.post(
   BooksController.createBook,
 );
 
+books.patch(
+  "/:bookId",
+  authMiddleware,
+  validateParam(validateUUID, "bookId"),
+  validateEPUB(validateUploadEpub),
+  BooksController.updateBook,
+);
+
 books.get("/my-books", authMiddleware, BooksController.getMyBooks);
 books.get(
   "/my-books/:id",

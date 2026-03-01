@@ -3,6 +3,7 @@ import type { Context } from "hono";
 import { EpubService } from "@/services/epub";
 import { BooksService, Toc } from "@/services/books";
 import { validators } from "@/middlewares/zod-validators";
+import { TocItem } from "@/schemas/books";
 
 export class BooksController {
   static async internalGetBooks(c: Context, ownerId: string = "") {
@@ -47,6 +48,32 @@ export class BooksController {
         toc: toc as Toc,
         originalName,
         ownerId,
+      });
+      return c.json(book, 201);
+    } catch (error) {
+      console.error(error);
+      return c.json({ error: "Error while saving the file" }, 500);
+    }
+  }
+  static async updateBook(c: Context) {
+    const bookId = c.get(validators.VALIDATED_PARAMS);
+    const epub = c.get(validators.VALIDATED_EPUB);
+    if (!epub) return c.json({ error: "Couldn't validate the epub file" }, 404);
+    const file = epub.file;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { metadata, coverBuffer, toc } =
+      await EpubService.extractData(buffer);
+    if (!metadata || !coverBuffer)
+      return c.json({ error: "Couldn't get epub file metadata or cover" }, 422);
+    const tocToUpdate = toc as TocItem[]
+    try {
+      const book = await BooksService.update(bookId.bookId, {
+        title: metadata.title,
+        author: metadata.author,
+        description: metadata.description,
+        language: metadata.language,
+        publisher: metadata.publisher,
+        tableOfContents: tocToUpdate
       });
       return c.json(book, 201);
     } catch (error) {
