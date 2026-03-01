@@ -180,10 +180,11 @@ export class EpubService {
         tagNameProcessors: [processors.stripPrefix],
         explicitArray: false,
       });
-      const navs = navJson.html.body.nav;
-      const tocNav = Array.isArray(navs)
-        ? navs.find((n: any) => n.$?.["epub:type"] === "toc")
-        : navs;
+      const allNavs = this.findAllNodes(navJson.html.body, "nav");
+      const tocNav =
+        allNavs.find((n: any) => n.$?.["epub:type"] === "toc") ||
+        allNavs.find((n: any) => n.ol);
+
       if (!tocNav || !tocNav.ol) return null;
       return this.parseNavOl(tocNav.ol, tocPath, opfPath);
     }
@@ -231,11 +232,19 @@ export class EpubService {
   ): TocItem[] {
     if (!ol) return [];
     const lis = Array.isArray(ol.li) ? ol.li : [ol.li];
-    return lis.map((li: any) => ({
-      title: li.a?._ || li.a || "",
-      href: this.normalizeTocHref(tocPath, li.a?.$?.href || "", opfPath),
-      children: li.ol ? this.parseNavOl(li.ol, tocPath, opfPath) : undefined,
-    }));
+    return lis.map((li: any) => {
+      const link = li.a;
+      const title =
+        typeof link === "object"
+          ? link._ || link["$text"] || "Unknown Title"
+          : link || "";
+
+      return {
+        title: title.trim(),
+        href: this.normalizeTocHref(tocPath, link?.$?.href || "", opfPath),
+        children: li.ol ? this.parseNavOl(li.ol, tocPath, opfPath) : undefined,
+      };
+    });
   }
 
   private static findCoverItem(manifest: any[]): any | undefined {
@@ -254,6 +263,22 @@ export class EpubService {
     return (
       item || manifest.find((i) => i.$?.["media-type"]?.startsWith("image/"))
     );
+  }
+
+  private static findAllNodes(obj: any, targetTag: string): any[] {
+    let results: any[] = [];
+    if (!obj || typeof obj !== "object") return results;
+
+    for (const key in obj) {
+      if (key === targetTag) {
+        const val = obj[key];
+        if (Array.isArray(val)) results.push(...val);
+        else results.push(val);
+      } else {
+        results.push(...this.findAllNodes(obj[key], targetTag));
+      }
+    }
+    return results;
   }
 
   private static resolveZipPath(originPath: string, href: string): string {
