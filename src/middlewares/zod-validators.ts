@@ -20,7 +20,7 @@ export const validateBody = (fn: any) => async (c: Context, next: Next) => {
     const flatErrors = r.error.flatten();
     return c.json(
       {
-        error: "Validation failed",
+        error: "Validation on request body failed",
         details: flatErrors.fieldErrors,
       },
       400,
@@ -67,7 +67,7 @@ export const validateEPUB = (fn: any) => async (c: Context, next: Next) => {
     const flatErrors = r.error.flatten();
     return c.json(
       {
-        error: "Validation failed",
+        error: "Validation on epub failed",
         details: flatErrors.fieldErrors,
       },
       400,
