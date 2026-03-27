@@ -65,7 +65,7 @@ export class BooksController {
       await EpubService.extractData(buffer);
     if (!metadata || !coverBuffer)
       return c.json({ error: "Couldn't get epub file metadata or cover" }, 422);
-    const tocToUpdate = toc as TocItem[]
+    const tocToUpdate = toc as TocItem[];
     try {
       const book = await BooksService.update(bookId.bookId, {
         title: metadata.title,
@@ -73,7 +73,7 @@ export class BooksController {
         description: metadata.description,
         language: metadata.language,
         publisher: metadata.publisher,
-        tableOfContents: tocToUpdate
+        tableOfContents: tocToUpdate,
       });
       return c.json(book, 201);
     } catch (error) {
@@ -91,10 +91,10 @@ export class BooksController {
     return BooksController.internalGetId(c, params.id, ownerId);
   }
   static async deleteMyBookById(c: Context) {
-    return c.json({todo: "TODO:"},200)
+    return c.json({ todo: "TODO:" }, 200);
   }
   static async deleteUserBookById(c: Context) {
-    return c.json({todo: "TODO:"},200)
+    return c.json({ todo: "TODO:" }, 200);
   }
   static async getBooks(c: Context) {
     return BooksController.internalGetBooks(c);

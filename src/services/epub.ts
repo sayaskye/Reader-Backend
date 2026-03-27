@@ -79,14 +79,24 @@ export class EpubService {
     }
 
     const coverPath = this.resolveZipPath(opfPath, coverItem.$.href);
-    const coverFile = zip.file(coverPath);
+
+    // zip.file() is case-sensitive; try exact match first, then case-insensitive scan.
+    const coverFile =
+      zip.file(coverPath) ??
+      Object.values(zip.files).find(
+        (f) => f.name.toLowerCase() === coverPath.toLowerCase(),
+      ) ??
+      null;
 
     if (!coverFile) {
-      // Emergency fallback: Search by filename if the path resolution fails
-      const filename = coverItem.$.href.split("/").pop();
-      const fallbackFile = Object.values(zip.files).find((f) =>
-        f.name.endsWith(filename),
-      );
+      // Last resort: match by filename only, case-insensitively
+      const filename = decodeURIComponent(coverItem.$.href.split("/").pop() ?? "").toLowerCase();
+      const fallbackFile =
+        filename
+          ? Object.values(zip.files).find((f) =>
+              f.name.toLowerCase().endsWith(filename),
+            )
+          : undefined;
 
       if (!fallbackFile)
         return { metadata, version, toc, coverBuffer: null, mimeType: null };
@@ -257,7 +267,7 @@ export class EpubService {
 
     item = manifest.find((i) => {
       const id = i.$?.id?.toLowerCase() ?? "";
-      const href = i.$?.href?.toLowerCase() ?? "";
+      const href = decodeURIComponent(i.$?.href ?? "").toLowerCase();
       const mime = i.$?.["media-type"]?.toLowerCase() ?? "";
       return (
         mime.startsWith("image/") &&
@@ -286,8 +296,10 @@ export class EpubService {
   }
 
   private static resolveZipPath(originPath: string, href: string): string {
+    // Decode percent-encoded characters (e.g. spaces, parentheses) before resolving
+    const decodedHref = decodeURIComponent(href);
     const basePath = originPath.split("/").slice(0, -1);
-    const hrefParts = href.split("/");
+    const hrefParts = decodedHref.split("/");
     const finalPath = [...basePath];
 
     for (const part of hrefParts) {

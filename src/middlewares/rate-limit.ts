@@ -24,11 +24,11 @@ export const apiLimiter = rateLimiter({
 
 export const uploadLimiter = rateLimiter({
   windowMs: 60 * 1000,
-  limit: 1,
+  limit: 2,
   handler: (c: Context) =>
     c.json({ error: "Upload limit reached. Try again in 1 minute." }, 429),
   keyGenerator: (c: Context) => {
     const userId = c.get(validators.VALIDATED_ID);
-    return userId ?? c.req.header("x-forwarded-for")  ?? "anon";
+    return userId ?? c.req.header("x-forwarded-for") ?? "anon";
   },
 });
